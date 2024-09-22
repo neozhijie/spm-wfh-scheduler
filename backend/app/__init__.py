@@ -18,6 +18,10 @@ def create_app():
     # Initialize extensions
     db.init_app(app)
 
+    # Import and initialize the staff controller
+    from app.controllers import staff_controller
+    app.register_blueprint(staff_controller.staff_bp)
+
     @app.route('/')
     def test():
         return "Welcome to the WFH Scheduler API."
