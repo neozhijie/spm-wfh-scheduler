@@ -22,11 +22,11 @@ jobs:
 
   deploy:
     needs: build
-    runs on: ubuntu-latest
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
     - name: Deploy to Vercel
-    - env:
-      RENDER_WEBHOOK_URL: ${{ secrets.VERCEL_WEBHOOK_URL }}
+      env:
+        VERCEL_WEBHOOK_URL: ${{ secrets.VERCEL_WEBHOOK_URL }}
       run: |
         curl -X POST $VERCEL_WEBHOOK_URL
