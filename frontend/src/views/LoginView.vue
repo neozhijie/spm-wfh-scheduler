@@ -42,11 +42,8 @@
   
       if (response.data.staff_id) {
         // Store the user info in localStorage
-        localStorage.setItem('user', JSON.stringify({
-          staff_id: response.data.staff_id,
-          name: response.data.name,
-          role: response.data.role
-        }));
+        
+        localStorage.setItem('user', JSON.stringify(response.data));
   
         // Redirect to dashboard
         router.push('/dashboard');

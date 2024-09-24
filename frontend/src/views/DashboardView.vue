@@ -1,7 +1,7 @@
 <template>
     <div class="dashboard">
       <h1>Welcome to your Dashboard</h1>
-      <p>You are logged in as {{ user.name }}</p>
+      <p>You are logged in as {{ user.fname }} {{ user.lname }}</p>
     </div>
   </template>
   

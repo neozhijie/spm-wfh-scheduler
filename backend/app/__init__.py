@@ -19,8 +19,10 @@ def create_app():
     db.init_app(app)
 
     # Import and initialize the staff controller
-    from app.controllers import staff_controller
+    from app.controllers import staff_controller, wfh_controller
     app.register_blueprint(staff_controller.staff_bp)
+    
+    app.register_blueprint(wfh_controller.wfh_bp)
 
     @app.route('/')
     def test():

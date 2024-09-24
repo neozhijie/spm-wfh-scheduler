@@ -1,6 +1,6 @@
+# app/controllers/staff_controller.py
 from flask import Blueprint, request, jsonify
-from app.models.staff import Staff
-from app import db
+from app.services.staff_service import StaffService
 
 staff_bp = Blueprint('staff', __name__, url_prefix='/api')
 
@@ -11,14 +11,13 @@ def login():
     if not data or not data.get('email') or not data.get('password'):
         return jsonify({"message": "Missing email or password"}), 400
 
-    staff = Staff.query.filter_by(Email=data['email']).first()
+    staff = StaffService.authenticate_staff(data['email'], data['password'])
 
-    if not staff or staff.Password != data['password']:
+    if not staff:
         return jsonify({"message": "Invalid email or password"}), 401
     
+    staff_details = StaffService.get_staff_details(staff)
     return jsonify({
         "message": "Login successful",
-        "staff_id": staff.Staff_ID,
-        "name": f"{staff.Staff_FName} {staff.Staff_LName}",
-        "role": staff.Role
+        **staff_details
     }), 200
