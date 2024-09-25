@@ -18,8 +18,8 @@ class WFHScheduleService:
             schedules.append(new_schedule)
 
             current_date += timedelta(days=7)  # Move to the next week
-            if end_date is None or current_date >= end_date:
-                break  # If no end_date or we've reached/passed the end_date, stop creating schedules
+            if end_date is None or current_date > end_date:
+                break  # If no end_date or we've passed the end_date, stop creating schedules
             
             
         

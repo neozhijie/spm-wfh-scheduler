@@ -19,6 +19,8 @@ CREATE TABLE WFHRequest (
     staff_id INT NOT NULL,
     manager_id INT NOT NULL,
     request_date DATE NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE DEFAULT NULL,
     status VARCHAR(20) DEFAULT 'PENDING', -- 'PENDING', 'REJECTED'
     reason_for_applying TEXT,
     reason_for_rejection TEXT DEFAULT NULL,
@@ -44,6 +46,5 @@ VALUES
 (3, 'Test', 'Staff', 'Test Department', 'Staff', 'Test Country', 'staff@test.com', 2, 2, 'testpassword2');
 
 -- DROP TABLE `wfh_scheduler`.`WFHSchedule`;
--- DROP TABLE `wfh_scheduler`.`WFHApproval`;
 -- DROP TABLE `wfh_scheduler`.`WFHRequest`;
 
