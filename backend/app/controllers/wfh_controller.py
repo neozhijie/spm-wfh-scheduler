@@ -15,7 +15,7 @@ def create_wfh_request():
     # Validate input
     print("\n----- Input Validation -----")
     required_fields = ['staff_id', 'manager_id', 'reason_for_applying', 
-                       'date', 'duration']
+                       'date', 'duration', 'dept', 'position']
     for field in required_fields:
         if field not in data:
             print(f"Validation failed: Missing required field: {field}")
@@ -47,9 +47,13 @@ def create_wfh_request():
         start_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
         wfh_schedules = WFHScheduleService.create_schedule(
             request_id=wfh_request.request_id,
+            staff_id=data['staff_id'],
+            manager_id=data['manager_id'],
             start_date=start_date,
             end_date=end_date,
-            duration=data['duration']
+            duration=data['duration'],
+            dept=data['dept'],
+            position=data['position']
         )
         print(f"WFH schedules created successfully. Number of schedules: {len(wfh_schedules)}")
 

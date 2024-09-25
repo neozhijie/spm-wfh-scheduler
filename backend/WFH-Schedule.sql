@@ -31,11 +31,17 @@ CREATE TABLE WFHRequest (
 CREATE TABLE WFHSchedule (
     schedule_id INT PRIMARY KEY AUTO_INCREMENT,
     request_id INT NOT NULL,
+    staff_id INT NOT NULL,
+    manager_id INT NOT NULL,
     date DATE NOT NULL,
     duration VARCHAR(20) NOT NULL, -- 'FULL_DAY', 'HALF_DAY_AM', 'HALF_DAY_PM'
     status VARCHAR(20) DEFAULT 'PENDING', -- 'PENDING', 'WITHDRAWN', 'REJECTED'
+    dept VARCHAR(255) NOT NULL,
+    position VARCHAR(255) NOT NULL,    
     reason_for_withdrawing TEXT DEFAULT NULL,
-    FOREIGN KEY (request_id) REFERENCES WFHRequest(request_id)
+    FOREIGN KEY (request_id) REFERENCES WFHRequest(request_id),
+    FOREIGN KEY (staff_id) REFERENCES Staff(staff_id),
+    FOREIGN KEY (manager_id) REFERENCES Staff(staff_id)
 );
 
 
