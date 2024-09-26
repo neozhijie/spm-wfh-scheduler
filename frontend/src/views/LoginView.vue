@@ -46,7 +46,7 @@
         localStorage.setItem('user', JSON.stringify(response.data));
   
         // Redirect to dashboard
-        router.push('/dashboard');
+        router.push('/schedule');
       }
     } catch (error) {
       if (error.response) {
@@ -82,7 +82,7 @@
   .app-title {
     font-size: 2.5rem;
     font-weight: bold;
-    color: #3498db;
+    color: #141b4d;
     margin-bottom: 1.5rem;
     text-align: center;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
@@ -91,7 +91,7 @@
   .login-form h2 {
     text-align: center;
     margin-bottom: 1.5rem;
-    color: #2c3e50;
+    color: #141b4d;
   }
   
   .form-group {
@@ -101,7 +101,7 @@
   label {
     display: block;
     margin-bottom: 0.5rem;
-    color: #34495e;
+    color: #141b4d;
     font-weight: 600;
     text-align: left;
   }
@@ -117,13 +117,13 @@
   
   input:focus {
     outline: none;
-    border-color: #3498db;
+    border-color: #141b4d;
   }
   
   button {
     width: 100%;
     padding: 0.75rem;
-    background-color: #3498db;
+    background-color: #141b4d;
     color: white;
     border: none;
     border-radius: 4px;
@@ -134,7 +134,7 @@
   }
   
   button:hover {
-    background-color: #2980b9;
+    background-color: #111d6c;
   }
   
   .error-message {

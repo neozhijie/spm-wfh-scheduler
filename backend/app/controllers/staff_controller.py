@@ -1,5 +1,6 @@
 # app/controllers/staff_controller.py
 from flask import Blueprint, request, jsonify
+from flask import abort
 from app.services.staff_service import StaffService
 
 staff_bp = Blueprint('staff', __name__, url_prefix='/api')
@@ -21,3 +22,10 @@ def login():
         "message": "Login successful",
         **staff_details
     }), 200
+
+@staff_bp.route('/staff/<int:staff_id>', methods=['GET'])
+def get_staff_by_id(staff_id):
+    staff = StaffService.get_staff_by_id(staff_id)
+    if not staff:
+        abort(404, description="Staff not found")
+    return jsonify(staff.to_dict()), 200

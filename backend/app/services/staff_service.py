@@ -15,3 +15,7 @@ class StaffService:
             "fname": staff.staff_fname,"lname": staff.staff_lname,
             "role": staff.role
         }
+
+    @staticmethod
+    def get_staff_by_id(staff_id):
+        return Staff.query.get(staff_id)
