@@ -15,7 +15,7 @@ def create_wfh_request():
     # Validate input
     print("\n----- Input Validation -----")
     required_fields = ['staff_id', 'manager_id', 'reason_for_applying', 
-                       'date', 'duration']
+                       'date', 'duration', 'dept', 'position']
     for field in required_fields:
         if field not in data:
             print(f"Validation failed: Missing required field: {field}")
@@ -28,10 +28,16 @@ def create_wfh_request():
 
         # Create WFHRequest
         print("\n----- Creating WFH Request -----")
+        end_date = None
+        if 'end_date' in data and data['end_date']:
+            end_date = datetime.strptime(data['end_date'], '%Y-%m-%d').date()
+
         wfh_request = WFHRequestService.create_request(
             staff_id=data['staff_id'],
             manager_id=data['manager_id'],
             request_date=today,
+            start_date=data['date'],
+            end_date=end_date,
             reason_for_applying=data['reason_for_applying']
         )
         print(f"WFH request created successfully. Request ID: {wfh_request.request_id}")
@@ -39,15 +45,15 @@ def create_wfh_request():
         # Create WFH Schedules
         print("\n----- Creating WFH Schedules -----")
         start_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
-        end_date = None
-        if 'end_date' in data and data['end_date']:
-            end_date = datetime.strptime(data['end_date'], '%Y-%m-%d').date()
-
         wfh_schedules = WFHScheduleService.create_schedule(
             request_id=wfh_request.request_id,
+            staff_id=data['staff_id'],
+            manager_id=data['manager_id'],
             start_date=start_date,
             end_date=end_date,
-            duration=data['duration']
+            duration=data['duration'],
+            dept=data['dept'],
+            position=data['position']
         )
         print(f"WFH schedules created successfully. Number of schedules: {len(wfh_schedules)}")
 
@@ -70,4 +76,27 @@ def create_wfh_request():
         print("\n===== ERROR OCCURRED =====")
         print(f"An error occurred while processing the WFH request: {str(e)}")
         print("============================\n")
+        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+
+@wfh_bp.route('/pending-requests/<int:manager_id>', methods=['GET'])
+def get_pending_requests(manager_id):
+    print(f"\n===== GET PENDING REQUESTS =====")
+    print(f"Retrieving pending requests for manager_id: {manager_id}")
+    
+    try:
+        print("Calling WFHRequestService.get_pending_requests_for_manager()")
+        pending_requests = WFHRequestService.get_pending_requests_for_manager(manager_id)
+        
+        print(f"Number of pending requests retrieved: {len(pending_requests)}")
+        
+        response = [request.to_dict() for request in pending_requests]
+        print("Successfully converted requests to dictionary format")
+        
+        print("===== GET PENDING REQUESTS COMPLETED =====\n")
+        return jsonify(response), 200
+    
+    except Exception as e:
+        print(f"ERROR: An exception occurred while retrieving pending requests")
+        print(f"Exception details: {str(e)}")
+        print("===== GET PENDING REQUESTS FAILED =====\n")
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500

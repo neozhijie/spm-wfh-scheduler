@@ -19,6 +19,8 @@ CREATE TABLE WFHRequest (
     staff_id INT NOT NULL,
     manager_id INT NOT NULL,
     request_date DATE NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE DEFAULT NULL,
     status VARCHAR(20) DEFAULT 'PENDING', -- 'PENDING', 'REJECTED'
     reason_for_applying TEXT,
     reason_for_rejection TEXT DEFAULT NULL,
@@ -29,11 +31,17 @@ CREATE TABLE WFHRequest (
 CREATE TABLE WFHSchedule (
     schedule_id INT PRIMARY KEY AUTO_INCREMENT,
     request_id INT NOT NULL,
+    staff_id INT NOT NULL,
+    manager_id INT NOT NULL,
     date DATE NOT NULL,
     duration VARCHAR(20) NOT NULL, -- 'FULL_DAY', 'HALF_DAY_AM', 'HALF_DAY_PM'
     status VARCHAR(20) DEFAULT 'PENDING', -- 'PENDING', 'WITHDRAWN', 'REJECTED'
+    dept VARCHAR(255) NOT NULL,
+    position VARCHAR(255) NOT NULL,    
     reason_for_withdrawing TEXT DEFAULT NULL,
-    FOREIGN KEY (request_id) REFERENCES WFHRequest(request_id)
+    FOREIGN KEY (request_id) REFERENCES WFHRequest(request_id),
+    FOREIGN KEY (staff_id) REFERENCES Staff(staff_id),
+    FOREIGN KEY (manager_id) REFERENCES Staff(staff_id)
 );
 
 
@@ -44,6 +52,5 @@ VALUES
 (3, 'Test', 'Staff', 'Test Department', 'Staff', 'Test Country', 'staff@test.com', 2, 2, 'testpassword2');
 
 -- DROP TABLE `wfh_scheduler`.`WFHSchedule`;
--- DROP TABLE `wfh_scheduler`.`WFHApproval`;
 -- DROP TABLE `wfh_scheduler`.`WFHRequest`;
 
