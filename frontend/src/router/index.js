@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '../views/LoginView.vue'
 import ScheduleView from '../views/ScheduleView.vue'
 import RequestView from '@/views/RequestView.vue'
+import ApplicationView from '@/views/ApplicationView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -22,6 +23,11 @@ const router = createRouter({
       name: 'requests',
       component: RequestView,
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/application',
+      name: 'application',
+      component: ApplicationView
     },
     // ... other routes ...
   ]
