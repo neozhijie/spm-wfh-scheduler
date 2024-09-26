@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '../views/LoginView.vue'
 import DashboardView from '../views/DashboardView.vue'
+import ApplicationView from '@/views/ApplicationView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -16,6 +17,11 @@ const router = createRouter({
       component: DashboardView,
       meta: { requiresAuth: true }
     },
+    {
+      path: '/application',
+      name: 'application',
+      component: ApplicationView
+    }
     // ... other routes ...
   ]
 })
