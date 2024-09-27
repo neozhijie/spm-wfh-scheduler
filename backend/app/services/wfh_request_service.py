@@ -22,14 +22,18 @@ class WFHRequestService:
     
 
     @staticmethod
-    def update_request(request_id, value):
+    def update_request(request_id, new_request_status, reason):   #new_request_status = approved / rejected
         # Fetch the request by its ID
         request = WFHRequest.query.get(request_id)
         
         # If the request exists, update the provided fields
         if request:
              # Update the status field
-            request.status = value
+            request.status = new_request_status
+
+             # provide reason for reject
+            if new_request_status == 'rejected':
+                request.reason_for_rejection = reason
             
             # Commit the updated record to the database
             db.session.commit()

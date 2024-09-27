@@ -107,17 +107,18 @@ def update_wfh_request():
     print(f"\n===== UPDATE REQUESTS =====")
     data = request.get_json()
     request_id = data['request_id']
-    request_status = data['request_status']
+    new_request_status = data['request_status']
+    reason = data['reason']
 
     print(f"Updating request for request_id: {request_id}")
     
     try:
         print("Calling WFHRequestService.update_request()")
-        response = WFHRequestService.update_request(request_id,request_status)
+        response = WFHRequestService.update_request(request_id, new_request_status, reason)
         if response == True:
             print("Successfully updated")
             print("===== GET PENDING REQUESTS COMPLETED =====\n")
-            return jsonify(f"Successfully updated request {request_id} as {request_status}"), 200
+            return jsonify(f"Successfully updated request {request_id} as {new_request_status}"), 200
         else:
             return jsonify(response), 404
     
