@@ -100,3 +100,30 @@ def get_pending_requests(manager_id):
         print(f"Exception details: {str(e)}")
         print("===== GET PENDING REQUESTS FAILED =====\n")
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+
+
+@wfh_bp.route('/pending-requests', methods=['PATCH'])
+def update_wfh_request():
+    print(f"\n===== UPDATE REQUESTS =====")
+    data = request.get_json()
+    request_id = data['request_id']
+    request_status = data['request_status']
+
+    print(f"Updating request for request_id: {request_id}")
+    
+    try:
+        print("Calling WFHRequestService.update_request()")
+        response = WFHRequestService.update_request(request_id,request_status)
+        if response == True:
+            print("Successfully updated")
+            print("===== GET PENDING REQUESTS COMPLETED =====\n")
+            return jsonify(f"Successfully updated request {request_id} as {request_status}"), 200
+        else:
+            return jsonify(response), 404
+    
+    except Exception as e:
+        db.session.rollback()
+        print("\n===== ERROR OCCURRED =====")
+        print(f"An error occurred while processing the WFH request: {str(e)}")
+        print("============================\n")
+        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
