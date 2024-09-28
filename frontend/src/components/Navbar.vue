@@ -14,7 +14,7 @@
             <router-link class="nav-link" to="/schedule">Schedule</router-link>
           </li>
           <li class="nav-item"  v-if="user.role==2 ||user.role==3">
-            <router-link class="nav-link" to="/apply">Apply</router-link>
+            <router-link class="nav-link" to="/application">Apply</router-link>
           </li>
           <li class="nav-item" v-if="user.role==1 || user.role==3">
             <router-link class="nav-link" to="/requests">Requests</router-link>
