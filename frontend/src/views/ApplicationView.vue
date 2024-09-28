@@ -3,19 +3,35 @@
     <div class="form-container">
       <div class="form-field">
         <label for="date">Date:
-        <input type="text" v-model="selectedDate" readonly placeholder="Select a date" class="input-field" />
-        <span class="calendar-icon" @click="toggleCalendar">&#128197;</span> <!-- Calendar icon -->
-      </label>
+          <input type="text" v-model="selectedDate" readonly placeholder="Select a date" class="input-field" />
+          <span class="calendar-icon" @click="toggleCalendar">&#128197;</span> <!-- Calendar icon -->
+        </label>
       </div>
-      <div class="form-field">
+      <div class="form-field"> <!-- recurring option -->
         <label>
-          <input type="checkbox" v-model="isRecurring" /> Recurring
+          <input type="radio" value="single" v-model="recurringOption" /> Single Day <!-- default -->
+        </label>
+        <label>
+          <input type="radio" value="recurring" v-model="recurringOption" /> Recurring
+        </label>
+      </div>
+      <div class="form-field" v-if="recurringOption === 'recurring'"> <!-- recurring option -->
+        <label for="dayOfWeek">Day of the Week:
+          <select class="input-field" v-model="selectedDayOfWeek">
+            <option value="mon">Monday</option>
+            <option value="tue">Tueday</option>
+            <option value="wed">Wednesday</option>
+            <option value="thu">Thursday</option>
+            <option value="fri">Friday</option>
+            <option value="sat">Saturday</option>
+            <option value="sun">Sunday</option>
+          </select>
         </label>
       </div>
       <div class="form-field">
         <label for="reasons">Reasons:
-        <input type="text" v-model="reasons" placeholder="Enter reasons" class="input-field" />
-      </label>
+          <input type="text" v-model="reasons" placeholder="Enter reasons" class="input-field" />
+        </label>
       </div>
       <button @click="applyDate" class="apply-button">Apply</button>
     </div>
@@ -46,7 +62,11 @@ export default defineComponent({
   },
   setup() {
     const selectedDate = ref(null);
+
     const isRecurring = ref(false);
+    const recurringOption = ref('single'); // set default
+    const selectedDayOfWeek = ref("Monday"); 
+
     const reasons = ref("");
     const showCalendar = ref(false);
 
@@ -89,38 +109,77 @@ export default defineComponent({
       showCalendar.value = false; // Close the calendar popup
     }
 
+    function getRecurringDates(dayOfWeek) {
+      // compute recurring dates for selectedDayOfWeek for next 3 mths
+
+      const recurringDates = [];
+      let currentDate = new Date();
+
+      // e.g. if today is WED (currentDate.getDay()=3)
+      // and user selects MON (dayOfWeek=1),
+      // the immediate recurring date will be 5 days from today
+      let dayOffset = (dayOfWeek + 7 - currentDate.getDay()) % 7;
+        // %7 keeps the offset within 0-6 days
+
+      // set currentDate to the first recurrence of selectedDayOfWeek
+      currentDate.setDate(currentDate.getDate() + dayOffset);
+
+      while (currentDate <= threeMonthsAhead) {
+        recurringDates.push(currentDate.toISOString().split('T')[0]); // Format YYYY-MM-DD
+        currentDate.setDate(currentDate.getDate() + 7); // Move to the next week
+      }
+
+      return recurringDates;
+    }
 
     function applyDate() {
-          if (selectedDate.value) {
-            fetch(`${import.meta.env.VITE_API_URL}/api/save-date/${userData.staff_id}`, { // to integrate with backend over here 
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                date: selectedDate.value,
-                recurring: isRecurring.value,
-                reasons: reasons.value,
-              }),
-            })
-            .then(response => response.json())
-            .then(data => {
-              const dateObj = new Date(selectedDate.value);
-              const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-              const dayName = daysOfWeek[dateObj.getDay()];
-  
-              if (isRecurring.value) {
-                alert(`${dayName} applied recurring successfully`);
-              } else {
-                alert(`${selectedDate.value} applied successfully`);
-              }
-              closeModal(); // Close the modal after applying the date
-            })
-            .catch(error => {
-              console.error('Error:', error);
-            });
-          }
-        }
+      // validations
+      if (!reasons.value) { alert('Provide a reason.'); return; }
+
+      // single-day arrangement
+      if (recurringOption.value === 'single' && selectedDate.value) {
+        fetchDates([selectedDate.value], false);
+      }
+      // recurring arrangement
+      else if (recurringOption.value === 'recurring' && selectedDate.value) {
+        const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const selectedDayOfWeek = daysOfWeek.indexOf(selectedDay.value);
+        const recurringDates = getRecurringDates(selectedDayOfWeek);
+        fetchDates(recurringDates, true);
+      }
+
+      function fetchDates(dates, isRecurring) {
+        fetch(`${import.meta.env.VITE_API_URL}/api/save-date/${userData.staff_id}`, { // to integrate with backend over here 
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            dates: dates, // local var
+            recurring: isRecurring, // local var
+            reasons: reasons.value,
+          }),
+        })
+          .then(response => response.json())
+          .then(data => {
+            // const dateObj = new Date(selectedDate.value);
+            // const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            // const dayName = daysOfWeek[dateObj.getDay()];
+
+            if (isRecurring) {
+              alert(`${selectedDayOfWeek.value} applied recurring successfully`);
+            } else {
+              alert(`${dates[0]} applied successfully`);
+            }
+            closeModal(); // Close the modal after applying the date
+          })
+          .catch(error => {
+            console.error('Error:', error);
+          });
+      }
+    }
+
+      
 
     return {
       selectedDate,
@@ -132,6 +191,9 @@ export default defineComponent({
       closeCalendar,
       handleDateClick,
       applyDate,
+
+      selectedDay,
+      fetchDates,
     };
   },
 });
