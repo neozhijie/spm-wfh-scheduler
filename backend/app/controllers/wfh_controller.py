@@ -72,11 +72,19 @@ def create_wfh_request():
             "status": wfh_request.status
         }), 201
 
+    except ValueError as ve:
+        print(f"\n===== ERROR OCCURRED =====")
+        print(f"Validation failed: {ve}")
+        print("============================\n")
+        db.session.rollback()
+        return jsonify({"message": str(ve)}), 400
+        
     except Exception as e:
         db.session.rollback()
         print("\n===== ERROR OCCURRED =====")
         print(f"An error occurred while processing the WFH request: {str(e)}")
         print("============================\n")
+        db.session.rollback()
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
 
 @wfh_bp.route('/pending-requests/<int:manager_id>', methods=['GET'])

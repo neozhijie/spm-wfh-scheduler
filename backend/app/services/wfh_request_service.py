@@ -1,9 +1,35 @@
 from app import db
 from app.models.wfh_request import WFHRequest
+from datetime import datetime, timedelta
 
 class WFHRequestService:
     @staticmethod
-    def create_request(staff_id, manager_id, request_date, start_date, end_date,reason_for_applying):
+    def create_request(staff_id, manager_id, request_date, start_date, end_date, reason_for_applying):
+        error_message = None
+        # Check if the start date is valid (within 2 months before or 3 months after today)
+        max_valid_date = datetime.now().date() + timedelta(days=90)
+        min_valid_date = datetime.now().date() - timedelta(days=60)
+        start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+
+        if start_date < min_valid_date or start_date > max_valid_date:
+            raise ValueError("Start date must be between 2 months ago and 3 months from now.")
+            
+
+        # Check if the end date is valid for recurring requests
+        if end_date:
+            if start_date >= end_date:
+                raise ValueError("End date must be after start date.")
+
+        # Check if there's an existing request for the same day
+        existing_request = WFHRequest.query.filter(
+            WFHRequest.staff_id == staff_id,
+            WFHRequest.start_date == start_date,
+            WFHRequest.status != 'EXPIRED'
+        ).first()
+
+        if existing_request and (not end_date):
+            raise ValueError("A request for this date already exists.")
+
         new_request = WFHRequest(
             staff_id=staff_id,
             manager_id=manager_id,
