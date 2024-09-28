@@ -9,11 +9,10 @@
       </div>
       <div class="form-field"> <!-- recurring option -->
         <label>
-          <input type="radio" value="single" v-model="recurringOption" name="recurringOption" /> Single Day
-          <!-- default -->
+          <input type="radio" value="single" v-model="recurringOption" /> Single Day <!-- default -->
         </label>
         <label>
-          <input type="radio" value="recurring" v-model="recurringOption" name="recurringOption" /> Recurring
+          <input type="radio" value="recurring" v-model="recurringOption" /> Recurring
         </label>
       </div>
       <div class="form-field" v-if="recurringOption === 'recurring'"> <!-- recurring option -->
@@ -65,8 +64,8 @@ export default defineComponent({
     const selectedDate = ref(null);
 
     const isRecurring = ref(false);
-    const selectedDayOfWeek = ref(null); 
-    const recurringOption = ref("single");
+    const selectedDayOfWeek = ref("Monday"); 
+    // const recurringOption = ref("single");
 
     const reasons = ref("");
     const showCalendar = ref(false);
@@ -192,10 +191,7 @@ export default defineComponent({
       toggleCalendar,
       closeCalendar,
       handleDateClick,
-      applyDate,
-
-      recurringOption,
-      selectedDayOfWeek
+      applyDate
     };
   },
 });
