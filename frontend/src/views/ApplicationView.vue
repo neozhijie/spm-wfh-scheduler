@@ -64,8 +64,8 @@ export default defineComponent({
     const selectedDate = ref(null);
 
     const isRecurring = ref(false);
-    const recurringOption = ref('single'); // set default
     const selectedDayOfWeek = ref("Monday"); 
+    const recurringOption = ref("single");
 
     const reasons = ref("");
     const showCalendar = ref(false);
@@ -143,8 +143,10 @@ export default defineComponent({
       // recurring arrangement
       else if (recurringOption.value === 'recurring' && selectedDate.value) {
         const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const selectedDayOfWeek = daysOfWeek.indexOf(selectedDay.value);
-        const recurringDates = getRecurringDates(selectedDayOfWeek);
+
+        // takes the index day that matches the selected day in form
+        const selectedDay = daysOfWeek.indexOf(selectedDayOfWeek.value);
+        const recurringDates = getRecurringDates(selectedDay);
         fetchDates(recurringDates, true);
       }
 
