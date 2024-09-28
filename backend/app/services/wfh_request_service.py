@@ -40,3 +40,20 @@ class WFHRequestService:
             return True
         else:
             return "Request Does not Exist!"
+        
+    @staticmethod
+    def check_date_range(two_months_ago):
+        # Fetch all requests from the database
+        requests = WFHRequest.query.all()
+        updated_count = 0
+
+        # Check each request
+        for request in requests:
+            # Assuming the 'start_date' field is a date type in the database
+            if request.start_date < two_months_ago and request.status!= 'EXPIRED':
+                request.status = 'EXPIRED'  # Update status to expired
+                updated_count += 1
+
+        # Commit the changes to the database
+        db.session.commit()
+        return updated_count

@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from app.services.wfh_request_service import WFHRequestService
 from app.services.wfh_schedule_service import WFHScheduleService
-from datetime import datetime
+from datetime import datetime, timedelta
 from app import db
 
 wfh_bp = Blueprint('wfh', __name__, url_prefix='/api')
@@ -127,4 +127,26 @@ def update_wfh_request():
         print("\n===== ERROR OCCURRED =====")
         print(f"An error occurred while processing the WFH request: {str(e)}")
         print("============================\n")
+        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+
+
+@wfh_bp.route('/check-date-range', methods=['POST'])
+def check_wfh_date_range():
+    """
+    Check the current date against the start date in the database rows.
+    If the start date is older than 2 months, update the status to 'EXPIRED'.
+    """
+    try:
+        # Get the current date
+        current_date = datetime.now().date()
+
+        # Calculate the date 2 months ago
+        two_months_ago = current_date - timedelta(days=60)
+
+        # Fetch all requests from the database
+        check = WFHRequestService.check_date_range(two_months_ago)
+        return jsonify({"message": f"Updated {check} requests to 'EXPIRED'."}), 200
+
+    except Exception as e:
+        db.session.rollback()  # Rollback the session in case of an error
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
