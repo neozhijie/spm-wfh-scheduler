@@ -19,7 +19,7 @@
         <label for="dayOfWeek">Day of the Week:
           <select class="input-field" v-model="selectedDayOfWeek">
             <option value="mon">Monday</option>
-            <option value="tue">Tueday</option>
+            <option value="tue">Tuesday</option>
             <option value="wed">Wednesday</option>
             <option value="thu">Thursday</option>
             <option value="fri">Friday</option>
@@ -65,7 +65,7 @@ export default defineComponent({
 
     const isRecurring = ref(false);
     const selectedDayOfWeek = ref("Monday"); 
-    const recurringOption = ref("single");
+    // const recurringOption = ref("single");
 
     const reasons = ref("");
     const showCalendar = ref(false);
@@ -145,8 +145,7 @@ export default defineComponent({
         const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
         // takes the index day that matches the selected day in form
-        const selectedDay = daysOfWeek.indexOf(selectedDayOfWeek.value);
-        const recurringDates = getRecurringDates(selectedDay);
+        const recurringDates = getRecurringDates(daysOfWeek.indexOf(selectedDayOfWeek.value));
         fetchDates(recurringDates, true);
       }
 
@@ -192,10 +191,7 @@ export default defineComponent({
       toggleCalendar,
       closeCalendar,
       handleDateClick,
-      applyDate,
-
-      selectedDay,
-      fetchDates,
+      applyDate
     };
   },
 });
