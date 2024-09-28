@@ -64,8 +64,8 @@ export default defineComponent({
     const selectedDate = ref(null);
 
     const isRecurring = ref(false);
-    const selectedDayOfWeek = ref("Monday"); 
-    // const recurringOption = ref("single");
+    const selectedDayOfWeek = ref(null); 
+    const recurringOption = ref("single");
 
     const reasons = ref("");
     const showCalendar = ref(false);
@@ -191,7 +191,9 @@ export default defineComponent({
       toggleCalendar,
       closeCalendar,
       handleDateClick,
-      applyDate
+      applyDate,
+      selectedDayOfWeek,
+      recurringOption
     };
   },
 });
