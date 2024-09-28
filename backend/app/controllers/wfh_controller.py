@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from app.services.wfh_request_service import WFHRequestService
 from app.services.wfh_schedule_service import WFHScheduleService
+from app.services.wfh_check_service import WFHCheckService
 from datetime import datetime, timedelta
 from app import db
 
@@ -152,6 +153,21 @@ def reject_expired_request():
         expired = WFHRequestService.reject_expired(two_months_ago)
         return jsonify({"message": f"Updated {expired} requests to 'REJECTED'."}), 200
 
+    except Exception as e:
+        db.session.rollback()  # Rollback the session in case of an error
+        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+    
+@wfh_bp.route('/check-wfh-count', methods=['POST'])
+def check_wfh_count():
+
+    data = request.get_json()
+    staff_id = data['staff_id']
+    date = data['date']
+    
+    try:
+        result = WFHCheckService.check_department_count(staff_id, date)
+        return('done')
+        print('done')
     except Exception as e:
         db.session.rollback()  # Rollback the session in case of an error
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
