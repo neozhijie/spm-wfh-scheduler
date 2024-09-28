@@ -22,38 +22,62 @@ class WFHRequestService:
     
 
     @staticmethod
-    def update_request(request_id, new_request_status, reason):   #new_request_status = approved / rejected
+    def update_request(request_id, new_request_status, two_months_ago, reason):   #new_request_status = approved / rejected
         # Fetch the request by its ID
         request = WFHRequest.query.get(request_id)
         
-        # If the request exists, update the provided fields
+        # Check if the request exists
         if request:
-             # Update the status field
-            request.status = new_request_status
+            
+            # Check if within date range
+            request_date = request.start_date
+            if WFHRequestService.check_date(request_date , two_months_ago):
 
-             # provide reason for reject
-            if new_request_status == 'rejected':
-                request.reason_for_rejection = reason
+                # Update the status field
+                request.status = new_request_status
+
+                # provide reason for reject
+                if new_request_status == 'REJECTED':
+                    request.reason_for_rejection = reason
+
+            # not within date range = not suppose to approve
+            else:
+                return "The date is invalid to be approved"
             
             # Commit the updated record to the database
             db.session.commit()
+
+            # happy path 
             return True
+        
         else:
+
+            # Request does not exist
             return "Request Does not Exist!"
         
     @staticmethod
-    def check_date_range(two_months_ago):
+    def reject_expired(two_months_ago):
         # Fetch all requests from the database
         requests = WFHRequest.query.all()
         updated_count = 0
 
         # Check each request
         for request in requests:
-            # Assuming the 'start_date' field is a date type in the database
-            if request.start_date < two_months_ago and request.status!= 'EXPIRED':
-                request.status = 'EXPIRED'  # Update status to expired
+
+            # Check if date range is within 2 months and only update those that has not been updated
+            if (WFHRequestService.check_date(request.start_date , two_months_ago) != True) and request.status!= 'REJECTED':
+                request.status = 'REJECTED'  # Update status to rejected
+                request.reason_for_rejection = "Rejected due to past time period" 
                 updated_count += 1
 
         # Commit the changes to the database
         db.session.commit()
         return updated_count
+    
+
+    @staticmethod
+    def check_date(request_date , two_months_ago):
+        if request_date > two_months_ago:
+            return True
+        else:
+            return False

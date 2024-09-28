@@ -110,14 +110,19 @@ def update_wfh_request():
     new_request_status = data['request_status']
     reason = data['reason']
 
+    # Get the current date
+    current_date = datetime.now().date()
+    # Calculate the date 2 months ago
+    two_months_ago = current_date - timedelta(days=60)
+
     print(f"Updating request for request_id: {request_id}")
     
     try:
         print("Calling WFHRequestService.update_request()")
-        response = WFHRequestService.update_request(request_id, new_request_status, reason)
+        response = WFHRequestService.update_request(request_id, new_request_status, two_months_ago, reason)
         if response == True:
             print("Successfully updated")
-            print("===== GET PENDING REQUESTS COMPLETED =====\n")
+            print("===== UPDATE PENDING REQUESTS COMPLETED =====\n")
             return jsonify(f"Successfully updated request {request_id} as {new_request_status}"), 200
         else:
             return jsonify(response), 404
@@ -130,11 +135,11 @@ def update_wfh_request():
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
 
 
-@wfh_bp.route('/check-date-range', methods=['POST'])
-def check_wfh_date_range():
+@wfh_bp.route('/reject-expired-request', methods=['POST'])
+def reject_expired_request():
     """
     Check the current date against the start date in the database rows.
-    If the start date is older than 2 months, update the status to 'EXPIRED'.
+    If the start date is older than 2 months, update the status to 'REJECTED'.
     """
     try:
         # Get the current date
@@ -144,8 +149,8 @@ def check_wfh_date_range():
         two_months_ago = current_date - timedelta(days=60)
 
         # Fetch all requests from the database
-        check = WFHRequestService.check_date_range(two_months_ago)
-        return jsonify({"message": f"Updated {check} requests to 'EXPIRED'."}), 200
+        expired = WFHRequestService.reject_expired(two_months_ago)
+        return jsonify({"message": f"Updated {expired} requests to 'REJECTED'."}), 200
 
     except Exception as e:
         db.session.rollback()  # Rollback the session in case of an error
