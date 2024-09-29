@@ -3,7 +3,7 @@
     <div class="dashboard">
 
       <h1>Welcome to your Schedule Dashboard</h1>
-      <p>You are logged in as {{ user.fname }} {{ user.lname }}</p>
+      <p>You are logged in as {{ user.staff_fname }} {{ user.staff_lname }}</p>
     </div>
   </template>
   
