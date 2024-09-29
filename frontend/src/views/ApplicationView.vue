@@ -125,68 +125,70 @@ export default {
     }
   },
   methods: {
-    formatDate(date) {
-      return date.toISOString().split('T')[0];
-    },
-    handleRecurringChange() {
-      if (!this.startDate || this.startDateError) {
-        this.showRecurringWarning = true;
-        this.isRecurring = false;
-      } else {
-        this.showRecurringWarning = false;
-        if (!this.isRecurring) {
-          this.endDate = '';
-        }
-      }
-      this.validateDates();
-    },
-    validateDates() {
-      this.startDateError = '';
-      this.endDateError = '';
-
-      const startDate = new Date(this.startDate);
-      const endDate = new Date(this.endDate);
-      const minDate = new Date(this.minStartDate);
-      const maxDate = new Date(this.maxDate);
-      const twoMonthsAgo = new Date();
-      twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
-      const threeMonthsAhead = new Date();
-      threeMonthsAhead.setMonth(threeMonthsAhead.getMonth() + 3);
-
-      if (startDate < twoMonthsAgo) {
-        this.startDateError = 'Start date cannot be more than 2 months ago.';
-      } else if (startDate > threeMonthsAhead) {
-        this.startDateError = 'Start date cannot be more than 3 months ahead.';
-      } else if (startDate < minDate || startDate > maxDate) {
-        this.startDateError = 'Start date must be within the allowed range.';
-      }
-
-      if (this.isRecurring) {
-        if (endDate <= startDate) {
-          this.endDateError = 'End date must be after the start date.';
-        } else if (endDate < twoMonthsAgo) {
-          this.endDateError = 'End date cannot be more than 2 months ago.';
-        } else if (endDate > threeMonthsAhead) {
-          this.endDateError = 'End date cannot be more than 3 months ahead.';
-        } else if (endDate < minDate || endDate > maxDate) {
-          this.endDateError = 'End date must be within the allowed range.';
-        }
+  formatDate(date) {
+    return date.toISOString().split('T')[0];
+  },
+  handleRecurringChange() {
+    if (!this.startDate || this.startDateError) {
+      this.showRecurringWarning = true;
+      this.isRecurring = false;
+    } else {
+      this.showRecurringWarning = false;
+      if (!this.isRecurring) {
+        this.endDate = '';
       }
     }
-,
-    submitForm() {
-      if (this.isFormValid) {
-        console.log('Form submitted:', {
-          startDate: this.startDate,
-          endDate: this.endDate,
-          isRecurring: this.isRecurring,
-          reason: this.reason
-        });
-        // TODO: Implement your form submission logic here
+    this.validateDates();
+  },
+  validateDates() {
+    this.startDateError = '';
+    this.endDateError = '';
 
+    const startDate = new Date(this.startDate);
+    const endDate = new Date(this.endDate);
+    const minDate = new Date(this.minStartDate);
+    const maxDate = new Date(this.maxDate);
+    const twoMonthsAgo = new Date();
+    twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+    const threeMonthsAhead = new Date();
+    threeMonthsAhead.setMonth(threeMonthsAhead.getMonth() + 3);
+
+    // Check if the start date is a weekend
+    if (startDate.getDay() === 0 || startDate.getDay() === 6) {
+      this.startDateError = 'Start date cannot be a weekend.';
+    } else if (startDate < twoMonthsAgo) {
+      this.startDateError = 'Start date cannot be more than 2 months ago.';
+    } else if (startDate > threeMonthsAhead) {
+      this.startDateError = 'Start date cannot be more than 3 months ahead.';
+    } else if (startDate < minDate || startDate > maxDate) {
+      this.startDateError = 'Start date must be within the allowed range.';
+    }
+
+    if (this.isRecurring) {
+      if (endDate <= startDate) {
+        this.endDateError = 'End date must be after the start date.';
+      } else if (endDate < twoMonthsAgo) {
+        this.endDateError = 'End date cannot be more than 2 months ago.';
+      } else if (endDate > threeMonthsAhead) {
+        this.endDateError = 'End date cannot be more than 3 months ahead.';
+      } else if (endDate < minDate || endDate > maxDate) {
+        this.endDateError = 'End date must be within the allowed range.';
       }
+    }
+  },
+  submitForm() {
+    if (this.isFormValid) {
+      console.log('Form submitted:', {
+        startDate: this.startDate,
+        endDate: this.endDate,
+        isRecurring: this.isRecurring,
+        reason: this.reason
+      });
+      // TODO: Implement your form submission logic here
     }
   }
+}
+
 }
 </script>
 
