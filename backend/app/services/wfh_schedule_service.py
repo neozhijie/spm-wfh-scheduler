@@ -50,21 +50,3 @@ class WFHScheduleService:
         
         db.session.commit()
         return schedules
-    
-    @staticmethod
-    def update_schedule(request_id):
-        # Fetch the existing schedules based on the request_id
-        schedules = WFHSchedule.query.filter_by(request_id=request_id).all()
-
-        if not schedules:
-            raise ValueError(f"No schedules found for request_id: {request_id}")
-
-
-        for schedule in schedules:
-            schedule.status = "APPROVED"
-
-        # Commit the updated schedules to the database
-        db.session.commit()
-        print(f"Schedules for request_id {request_id} have been updated successfully.")
-
-        return True
