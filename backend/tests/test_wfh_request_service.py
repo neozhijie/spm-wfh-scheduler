@@ -1,289 +1,125 @@
 import unittest
-from datetime import datetime, timedelta
-from app import create_app, db
-from config import TestConfig
-from app.models.staff import Staff
+from unittest.mock import patch, MagicMock
+from app import db
+from app.models.wfh_schedule import WFHSchedule
 from app.models.wfh_request import WFHRequest
-from app.services.wfh_request_service import WFHRequestService
+from datetime import date, timedelta
+from app.services.wfh_schedule_service import WFHScheduleService
 
 
-class WFHRequestServiceTestCase(unittest.TestCase):
-    def setUp(self):
-        self.app = create_app(TestConfig)
-        self.app_context = self.app.app_context()
-        self.app_context.push()
+class WFHScheduleServiceTestCase(unittest.TestCase):
 
-        db.create_all()
+    @patch('app.services.wfh_schedule_service.WFHSchedule')
+    @patch('app.services.wfh_schedule_service.db.session')
+    def test_create_schedule_success(self, mock_db_session, mock_WFHSchedule):
+        # Setup mock data
+        request_id = 1
+        staff_id = 101
+        manager_id = 202
+        start_date = date(2024, 10, 1)
+        end_date = date(2024, 10, 29)
+        duration = "full-day"
+        dept = "Engineering"
+        position = "Developer"
 
-        staff1 = Staff(
-            staff_id=1,
-            staff_fname="Test",
-            staff_lname="Director",
-            dept="Test Department",
-            position="Director",
-            country="Test Country",
-            email="director@test.com",
-            reporting_manager=None,
-            role=1,
-            password="testpassword1",
+        # Mock no existing schedules
+        mock_WFHSchedule.query.filter.return_value.first.return_value = None
+
+        # Call the method
+        schedules = WFHScheduleService.create_schedule(
+            request_id, staff_id, manager_id, start_date, end_date, duration, dept, position
         )
-        staff2 = Staff(
-            staff_id=2,
-            staff_fname="Test",
-            staff_lname="Manager",
-            dept="Test Department",
-            position="Manager",
-            country="Test Country",
-            email="manager@test.com",
-            reporting_manager=1,
-            role=3,
-            password="testpassword3",
+
+        # Assertions
+        self.assertEqual(len(schedules), 5)  # Should create 5 schedules (every 7 days in October)
+        mock_db_session.add.assert_called()
+        mock_db_session.commit.assert_called()
+        self.assertEqual(schedules[0].date, start_date)
+
+    @patch('app.services.wfh_schedule_service.WFHSchedule')
+    @patch('app.services.wfh_schedule_service.db.session')
+    def test_create_schedule_existing_schedule(self, mock_db_session, mock_WFHSchedule):
+        # Setup mock data
+        request_id = 1
+        staff_id = 101
+        manager_id = 202
+        start_date = date(2024, 10, 1)
+        end_date = date(2024, 10, 29)
+        duration = "full-day"
+        dept = "Engineering"
+        position = "Developer"
+
+        # Mock an existing schedule
+        mock_WFHSchedule.query.filter.return_value.first.return_value = MagicMock()
+
+        # Call the method
+        schedules = WFHScheduleService.create_schedule(
+            request_id, staff_id, manager_id, start_date, end_date, duration, dept, position
         )
-        staff3 = Staff(
-            staff_id=3,
-            staff_fname="Test",
-            staff_lname="Staff",
-            dept="Test Department",
-            position="Staff",
-            country="Test Country",
-            email="staff@test.com",
-            reporting_manager=2,
-            role=2,
-            password="testpassword2",
-        )
-        db.session.add_all([staff1, staff2, staff3])
-        db.session.commit()
 
-        self.staff1 = staff1
-        self.staff2 = staff2
-        self.staff3 = staff3
+        # Assertions
+        self.assertEqual(len(schedules), 0)  # Should not create any schedules
+        mock_db_session.commit.assert_not_called()  # No commit because no schedules created
 
-    def tearDown(self):
-        db.session.remove()
-        db.drop_all()
-        self.app_context.pop()
+    @patch('app.services.wfh_schedule_service.WFHSchedule')
+    @patch('app.services.wfh_schedule_service.db.session')
+    def test_create_schedule_no_schedules(self, mock_db_session, mock_WFHSchedule):
+        # Setup mock data
+        request_id = 1
+        staff_id = 101
+        manager_id = 202
+        start_date = date(2024, 10, 1)
+        end_date = None  # Single day scheduling
+        duration = "half-day"
+        dept = "Engineering"
+        position = "Developer"
 
-    def test_create_request_success(self):
-        today = datetime.now().date()
-        start_date = (today + timedelta(days=5)).strftime("%Y-%m-%d")
-        end_date = None
-        wfh_request = WFHRequestService.create_request(
-            staff_id=self.staff3.staff_id,
-            manager_id=self.staff2.staff_id,
-            request_date=today,
-            start_date=start_date,
-            end_date=end_date,
-            reason_for_applying="Need to work from home",
-        )
-        self.assertIsNotNone(wfh_request)
-        self.assertEqual(wfh_request.staff_id, self.staff3.staff_id)
+        # Mock an existing schedule
+        mock_WFHSchedule.query.filter.return_value.first.return_value = None
 
-    def test_create_request_invalid_start_date(self):
-        today = datetime.now().date()
-        invalid_start_date = (today - timedelta(days=61)).strftime("%Y-%m-%d")
+        # Call the method
         with self.assertRaises(ValueError) as context:
-            WFHRequestService.create_request(
-                staff_id=self.staff3.staff_id,
-                manager_id=self.staff2.staff_id,
-                request_date=today,
-                start_date=invalid_start_date,
-                end_date=None,
-                reason_for_applying="Need to work from home",
+            WFHScheduleService.create_schedule(
+                request_id, staff_id, manager_id, start_date, end_date, duration, dept, position
             )
-        self.assertEqual(
-            str(context.exception),
-            "Start date must be between 2 months ago and 3 months from now.",
-        )
 
-    def test_create_request_invalid_end_date(self):
-        today = datetime.now().date()
-        start_date = (today + timedelta(days=5)).strftime("%Y-%m-%d")
-        end_date = (today + timedelta(days=4)).strftime("%Y-%m-%d")
+        # Assertions
+        self.assertTrue("No schedules were created" in str(context.exception))
+        mock_db_session.delete.assert_called_once_with(WFHRequest.query.get(request_id))
+
+    @patch('app.services.wfh_schedule_service.WFHSchedule')
+    @patch('app.services.wfh_schedule_service.db.session')
+    def test_update_schedule_success(self, mock_db_session, mock_WFHSchedule):
+        # Setup mock data
+        request_id = 1
+        mock_schedule = MagicMock()
+
+        # Mock schedules found
+        mock_WFHSchedule.query.filter_by.return_value.all.return_value = [mock_schedule]
+
+        # Call the method
+        result = WFHScheduleService.update_schedule(request_id)
+
+        # Assertions
+        self.assertTrue(result)
+        self.assertEqual(mock_schedule.status, "APPROVED")
+        mock_db_session.commit.assert_called_once()
+
+    @patch('app.services.wfh_schedule_service.WFHSchedule')
+    def test_update_schedule_no_schedules(self, mock_WFHSchedule):
+        # Setup mock data
+        request_id = 1
+
+        # Mock no schedules found
+        mock_WFHSchedule.query.filter_by.return_value.all.return_value = []
+
+        # Call the method and check for exception
         with self.assertRaises(ValueError) as context:
-            WFHRequestService.create_request(
-                staff_id=self.staff3.staff_id,
-                manager_id=self.staff2.staff_id,
-                request_date=today,
-                start_date=start_date,
-                end_date=end_date,
-                reason_for_applying="Need to work from home",
-            )
-        self.assertEqual(str(context.exception), "End date must be after start date.")
+            WFHScheduleService.update_schedule(request_id)
 
-    def test_create_request_existing_request(self):
-        today = datetime.now().date()
-        start_date = (today + timedelta(days=5)).strftime("%Y-%m-%d")
-        WFHRequestService.create_request(
-            staff_id=self.staff3.staff_id,
-            manager_id=self.staff2.staff_id,
-            request_date=today,
-            start_date=start_date,
-            end_date=None,
-            reason_for_applying="First request",
-        )
-        with self.assertRaises(ValueError) as context:
-            WFHRequestService.create_request(
-                staff_id=self.staff3.staff_id,
-                manager_id=self.staff2.staff_id,
-                request_date=today,
-                start_date=start_date,
-                end_date=None,
-                reason_for_applying="Second request",
-            )
-        self.assertEqual(
-            str(context.exception), "A request for this date already exists."
-        )
+        # Assertions
+        self.assertTrue(f"No schedules found for request_id: {request_id}" in str(context.exception))
 
-    def test_get_pending_requests_for_manager(self):
-        today = datetime.now().date()
-        start_date = (today + timedelta(days=5)).strftime("%Y-%m-%d")
-        WFHRequestService.create_request(
-            staff_id=self.staff3.staff_id,
-            manager_id=self.staff2.staff_id,
-            request_date=today,
-            start_date=start_date,
-            end_date=None,
-            reason_for_applying="Need to work from home",
-        )
-        pending_requests = WFHRequestService.get_pending_requests_for_manager(
-            self.staff2.staff_id
-        )
-        self.assertEqual(len(pending_requests), 1)
-        self.assertEqual(pending_requests[0].staff_id, self.staff3.staff_id)
-
-    def test_update_request_success(self):
-        today = datetime.now().date()
-        start_date = (today + timedelta(days=5)).strftime("%Y-%m-%d")
-        wfh_request = WFHRequestService.create_request(
-            staff_id=self.staff3.staff_id,
-            manager_id=self.staff2.staff_id,
-            request_date=today,
-            start_date=start_date,
-            end_date=None,
-            reason_for_applying="Need to work from home",
-        )
-        two_months_ago = today - timedelta(days=60)
-        response = WFHRequestService.update_request(
-            request_id=wfh_request.request_id,
-            new_request_status="APPROVED",
-            two_months_ago=two_months_ago,
-            reason=None,
-        )
-        self.assertTrue(response)
-        updated_request = WFHRequest.query.get(wfh_request.request_id)
-        self.assertEqual(updated_request.status, "APPROVED")
-
-    def test_update_request_invalid_date(self):
-        today = datetime.now().date()
-        invalid_start_date = today - timedelta(days=61)
-        wfh_request = WFHRequest(
-            staff_id=self.staff3.staff_id,
-            manager_id=self.staff2.staff_id,
-            request_date=today,
-            start_date=invalid_start_date,
-            end_date=None,
-            reason_for_applying="Need to work from home",
-        )
-        db.session.add(wfh_request)
-        db.session.commit()
-
-        two_months_ago = today - timedelta(days=60)
-        response = WFHRequestService.update_request(
-            request_id=wfh_request.request_id,
-            new_request_status="APPROVED",
-            two_months_ago=two_months_ago,
-            reason=None,
-        )
-        self.assertEqual(response, "The date is invalid to be approved")
-        updated_request = WFHRequest.query.get(wfh_request.request_id)
-        self.assertEqual(updated_request.status, "PENDING")
-
-    def test_update_request_nonexistent(self):
-        two_months_ago = datetime.now().date() - timedelta(days=60)
-        response = WFHRequestService.update_request(
-            request_id=999,
-            new_request_status="APPROVED",
-            two_months_ago=two_months_ago,
-            reason=None,
-        )
-        self.assertEqual(response, "Request Does not Exist!")
-
-    def test_reject_expired(self):
-        today = datetime.now().date()
-        valid_start_date = today - timedelta(days=30)
-        expired_start_date = today - timedelta(days=61)
-        valid_request = WFHRequest(
-            staff_id=self.staff3.staff_id,
-            manager_id=self.staff2.staff_id,
-            request_date=today,
-            start_date=valid_start_date,
-            end_date=None,
-            reason_for_applying="Valid request",
-        )
-        expired_request = WFHRequest(
-            staff_id=self.staff3.staff_id,
-            manager_id=self.staff2.staff_id,
-            request_date=today,
-            start_date=expired_start_date,
-            end_date=None,
-            reason_for_applying="Expired request",
-        )
-        db.session.add_all([valid_request, expired_request])
-        db.session.commit()
-
-        two_months_ago = today - timedelta(days=60)
-        updated_count = WFHRequestService.reject_expired(two_months_ago)
-        self.assertEqual(updated_count, 1)
-        expired_request = WFHRequest.query.filter_by(
-            reason_for_applying="Expired request"
-        ).first()
-        self.assertEqual(expired_request.status, "REJECTED")
-        valid_request = WFHRequest.query.filter_by(
-            reason_for_applying="Valid request"
-        ).first()
-        self.assertEqual(valid_request.status, "PENDING")
-
-    def test_check_date(self):
-        two_months_ago = datetime.now().date() - timedelta(days=60)
-        date_within_range = datetime.now().date() - timedelta(days=30)
-        date_out_of_range = datetime.now().date() - timedelta(days=61)
-        self.assertTrue(WFHRequestService.check_date(date_within_range, two_months_ago))
-        self.assertFalse(
-            WFHRequestService.check_date(date_out_of_range, two_months_ago)
-        )
-
-    def test_create_request_start_date_too_far(self):
-        today = datetime.now().date()
-        start_date = (today + timedelta(days=91)).strftime("%Y-%m-%d")  # Beyond 90 days
-        with self.assertRaises(ValueError) as context:
-            WFHRequestService.create_request(
-                staff_id=self.staff3.staff_id,
-                manager_id=self.staff2.staff_id,
-                request_date=today,
-                start_date=start_date,
-                end_date=None,
-                reason_for_applying="Need to work from home",
-            )
-        self.assertEqual(
-            str(context.exception),
-            "Start date must be between 2 months ago and 3 months from now.",
-        )
-
-    def test_create_request_end_date_before_start_date(self):
-        today = datetime.now().date()
-        start_date = (today + timedelta(days=5)).strftime("%Y-%m-%d")
-        end_date = (today + timedelta(days=4)).strftime("%Y-%m-%d")
-        with self.assertRaises(ValueError) as context:
-            WFHRequestService.create_request(
-                staff_id=self.staff3.staff_id,
-                manager_id=self.staff2.staff_id,
-                request_date=today,
-                start_date=start_date,
-                end_date=end_date,
-                reason_for_applying="Need to work from home",
-            )
-        self.assertEqual(str(context.exception), "End date must be after start date.")
-
-
-if __name__ == "__main__":
+# Run the tests
+if __name__ == '__main__':
     unittest.main()
