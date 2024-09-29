@@ -57,7 +57,7 @@ class WFHScheduleService:
         schedules = WFHSchedule.query.filter_by(request_id=request_id).all()
 
         if not schedules:
-            raise ValueError(f"No schedules found for request_id: {request_id}")
+            return False
             
         else:
             for schedule in schedules:

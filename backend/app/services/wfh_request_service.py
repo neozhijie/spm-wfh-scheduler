@@ -87,7 +87,8 @@ class WFHRequestService:
                     schedules_updated = WFHScheduleService.update_schedule(request_id)
                     
                     # Check if schedules were successfully updated
-                    if isinstance(schedules_updated, bool) and schedules_updated:
+                    if schedules_updated:
+
                         db.session.commit()  # Commit the updates
                         return True
                     else:
