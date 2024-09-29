@@ -84,7 +84,7 @@ class WFHRequestService:
                     return True
                 
                 elif new_request_status == 'APPROVED':
-                    if WFHScheduleService.update_schedule(request_id) == True:
+                    if WFHScheduleService.update_schedule(request_id):
                         return True
                     else:
                         return "Error Occured"

@@ -58,7 +58,7 @@ class WFHScheduleService:
 
         if not schedules:
             raise ValueError(f"No schedules found for request_id: {request_id}")
-            
+            return False
         else:
             for schedule in schedules:
                 schedule.status = "APPROVED"
