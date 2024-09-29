@@ -58,13 +58,12 @@ class WFHScheduleService:
 
         if not schedules:
             raise ValueError(f"No schedules found for request_id: {request_id}")
-            return False
-        else:
-            for schedule in schedules:
-                schedule.status = "APPROVED"
+    
+        for schedule in schedules:
+            schedule.status = "APPROVED"
 
-            # Commit the updated schedules to the database
-            db.session.commit()
-            print(f"Schedules for request_id {request_id} have been updated successfully.")
+        # Commit the updated schedules to the database
+        db.session.commit()
+        print(f"Schedules for request_id {request_id} have been updated successfully.")
 
-            return True
+        return True
