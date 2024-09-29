@@ -1,6 +1,6 @@
 from app import db
 from app.models.wfh_request import WFHRequest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 class WFHRequestService:
     @staticmethod
@@ -9,7 +9,9 @@ class WFHRequestService:
         # Check if the start date is valid (within 2 months before or 3 months after today)
         max_valid_date = datetime.now().date() + timedelta(days=90)
         min_valid_date = datetime.now().date() - timedelta(days=60)
-        start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+        if(not isinstance(start_date, date)):
+            start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+
 
         if start_date < min_valid_date or start_date > max_valid_date:
             raise ValueError("Start date must be between 2 months ago and 3 months from now.")
@@ -18,7 +20,18 @@ class WFHRequestService:
         # Check if the end date is valid for recurring requests
         
         if end_date:
-            end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+            if(not isinstance(end_date, date)):
+                print("try2")
+                print(type(end_date))
+                print(isinstance(end_date, date))
+                end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+                print("try2")
+
+            if end_date < min_valid_date or end_date > max_valid_date:
+                raise ValueError("End date must be between 2 months ago and 3 months from now.")
+            # print(type(end_date))
+            # print(type(start_date))
+            
             if start_date >= end_date:
                 raise ValueError("End date must be after start date.")
 

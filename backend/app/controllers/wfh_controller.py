@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from app.services.wfh_request_service import WFHRequestService
 from app.services.wfh_schedule_service import WFHScheduleService
 from app.services.wfh_check_service import WFHCheckService
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from app import db
 
 wfh_bp = Blueprint('wfh', __name__, url_prefix='/api')
@@ -31,7 +31,8 @@ def create_wfh_request():
         print("\n----- Creating WFH Request -----")
         end_date = None
         if 'end_date' in data and data['end_date']:
-            end_date = datetime.strptime(data['end_date'], '%Y-%m-%d').date()
+            if(not isinstance(data['end_date'], date)):
+                end_date = datetime.strptime(data['end_date'], '%Y-%m-%d').date()
 
         wfh_request = WFHRequestService.create_request(
             staff_id=data['staff_id'],
@@ -45,7 +46,8 @@ def create_wfh_request():
 
         # Create WFH Schedules
         print("\n----- Creating WFH Schedules -----")
-        start_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
+        if(not isinstance(data['date'], date)):
+            start_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
         wfh_schedules = WFHScheduleService.create_schedule(
             request_id=wfh_request.request_id,
             staff_id=data['staff_id'],
