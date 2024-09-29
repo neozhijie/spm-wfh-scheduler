@@ -84,8 +84,8 @@ class WFHRequestService:
                     return True
                 
                 elif new_request_status == 'APPROVED':
-                    if WFHScheduleService.update_schedule(request_id):
-                        return True
+                    WFHScheduleService.update_schedule(request_id)
+                    return True
 
 
             # not within date range = not suppose to approve
