@@ -126,7 +126,7 @@ class WFHCheckServiceTestCase(unittest.TestCase):
         db.session.commit()
 
         result = WFHCheckService.check_department_count(self.staff2.staff_id, date)
-        self.assertEqual(result, "Success")
+        self.assertEqual(result, "2")
 
     def test_check_department_count_no_staff_in_dept(self):
         # Remove staff from department

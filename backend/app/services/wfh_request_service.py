@@ -96,10 +96,10 @@ class WFHRequestService:
             
             else:
                 # The request date is not within the valid date range
-                return "The date is invalid to be approved"
+                return "The request is invalid or outside the acceptable date range."
         
         # If no request was found with the given request_id
-        return "Request Does not Exist!"
+        return "Request does not exist."
     
     @staticmethod
     def reject_expired(two_months_ago):
