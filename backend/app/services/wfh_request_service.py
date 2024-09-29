@@ -81,11 +81,9 @@ class WFHRequestService:
                 # provide reason for reject
                 if new_request_status == 'REJECTED':
                     request.reason_for_rejection = reason
-                    return True
                 
                 elif new_request_status == 'APPROVED':
                     WFHScheduleService.create_schedule(request_id, request.staff_id, request.manager_id, request.start_date, request.end_date, duration, dept, position)
-                    return True
 
 
             # not within date range = not suppose to approve
