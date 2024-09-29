@@ -120,9 +120,7 @@ def update_wfh_request():
     request_id = data['request_id']
     new_request_status = data['request_status']
     reason = data['reason']
-    dept = data['dept']
-    position = data['position']
-    duration = data['duration']
+
 
     # Get the current date
     current_date = datetime.now().date()
@@ -133,7 +131,7 @@ def update_wfh_request():
     
     try:
         print("Calling WFHRequestService.update_request()")
-        response = WFHRequestService.update_request(request_id, new_request_status, two_months_ago, reason, dept, position, duration)
+        response = WFHRequestService.update_request(request_id, new_request_status, two_months_ago, reason)
         if response == True:
             print("Successfully updated")
             print("===== UPDATE PENDING REQUESTS COMPLETED =====\n")

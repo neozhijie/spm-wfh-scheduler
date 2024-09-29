@@ -64,7 +64,7 @@ class WFHRequestService:
     
 
     @staticmethod
-    def update_request(request_id, new_request_status, two_months_ago, reason, dept, position, duration):   #new_request_status = approved / rejected
+    def update_request(request_id, new_request_status, two_months_ago, reason):   #new_request_status = approved / rejected
         # Fetch the request by its ID
         request = WFHRequest.query.get(request_id)
         
@@ -84,7 +84,7 @@ class WFHRequestService:
                     return True
                 
                 elif new_request_status == 'APPROVED':
-                    WFHScheduleService.create_schedule(request_id, request.staff_id, request.manager_id, request.start_date, request.end_date, duration, dept, position)
+                    WFHScheduleService.update_schedule(request_id)
                     return True
 
 
