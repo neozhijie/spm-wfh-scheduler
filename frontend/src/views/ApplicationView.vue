@@ -1,284 +1,279 @@
 <template>
-  <div class="login-container">
-    <div class="form-container">
-      <div class="form-field">
-        <label for="date">Date:
-          <input type="text" v-model="selectedDate" readonly placeholder="Select a date" class="input-field" />
-          <span class="calendar-icon" @click="toggleCalendar">&#128197;</span> <!-- Calendar icon -->
-        </label>
+  <div>
+    <Navbar />
+    <div class="background-container">
+      <div class="container py-5">
+        <div class="row justify-content-center">
+          <div class="col-md-8">
+            <div class="card custom-card">
+              <div class="card-header">
+                <h2 class="mb-0">Work From Home Request Form</h2>
+              </div>
+              <div class="card-body">
+                <form @submit.prevent="submitForm">
+                  <div class="mb-4">
+                    <label for="startDate" class="form-label">Start Date</label>
+                    <div class="input-group">
+                      <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                      <input
+                        type="date"
+                        class="form-control"
+                        id="startDate"
+                        v-model="startDate"
+                        :min="minStartDate"
+                        :max="maxDate"
+                        required
+                        @change="validateDates"
+                      >
+                    </div>
+                    <div v-if="startDateError" class="text-danger mt-1">
+                      {{ startDateError }}
+                    </div>
+                  </div>
+                  
+                  <div class="mb-4 form-check">
+                    <input
+                      type="checkbox"
+                      class="form-check-input"
+                      id="recurring"
+                      v-model="isRecurring"
+                      @change="handleRecurringChange"
+                      :disabled="isRecurringDisabled"
+                    >
+                    <label class="form-check-label" for="recurring">Recurring Request</label>
+                    <div v-if="showRecurringWarning" class="text-danger mt-1">
+                      Please select a valid start date before making this a recurring request.
+                    </div>
+                  </div>
+                  
+                  <div v-if="isRecurring" class="mb-4">
+                    <label for="endDate" class="form-label">End Date</label>
+                    <div class="input-group">
+                      <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                      <input
+                        type="date"
+                        class="form-control"
+                        id="endDate"
+                        v-model="endDate"
+                        :min="startDate"
+                        :max="maxDate"
+                        required
+                        @change="validateDates"
+                      >
+                    </div>
+                    <div v-if="endDateError" class="text-danger mt-1">
+                      {{ endDateError }}
+                    </div>
+                  </div>
+                  
+                  <div class="mb-4">
+                    <label for="reason" class="form-label">Reason</label>
+                    <textarea
+                      class="form-control"
+                      id="reason"
+                      v-model="reason"
+                      rows="3"
+                      required
+                    ></textarea>
+                  </div>
+                  
+                  <button type="submit" class="btn btn-primary btn-lg w-40" :disabled="!isFormValid">Submit Request</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="form-field"> <!-- recurring option -->
-        <label>
-          <input type="radio" value="single" v-model="recurringOption" /> Single Day <!-- default -->
-        </label>
-        <label>
-          <input type="radio" value="recurring" v-model="recurringOption" /> Recurring
-        </label>
-      </div>
-      <div class="form-field" v-if="recurringOption === 'recurring'"> <!-- recurring option -->
-        <label for="dayOfWeek">Day of the Week:
-          <select class="input-field" v-model="selectedDayOfWeek">
-            <option value="mon">Monday</option>
-            <option value="tue">Tuesday</option>
-            <option value="wed">Wednesday</option>
-            <option value="thu">Thursday</option>
-            <option value="fri">Friday</option>
-            <option value="sat">Saturday</option>
-            <option value="sun">Sunday</option>
-          </select>
-        </label>
-      </div>
-      <div class="form-field">
-        <label for="reasons">Reasons:
-          <input type="text" v-model="reasons" placeholder="Enter reasons" class="input-field" />
-        </label>
-      </div>
-      <button @click="applyDate" class="apply-button">Apply</button>
-    </div>
-
-    <!-- Calendar popup when icon is clicked -->
-    <div v-if="showCalendar" class="calendar-popup">
-      <FullCalendar :options="calendarOptions" @dateClick="handleDateClick" />
-    </div>
-    <div v-if="showCalendar" class="calendar-popup">
-      <button class="close-button" @click="closeCalendar">X</button>
-      <FullCalendar :options="calendarOptions" />
     </div>
   </div>
 </template>
 
-  
-  
-    
 <script>
-import { defineComponent, ref } from 'vue';
-import FullCalendar from '@fullcalendar/vue3';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import interactionPlugin from '@fullcalendar/interaction';
+import Navbar from '@/components/Navbar.vue'
 
-export default defineComponent({
+export default {
   components: {
-    FullCalendar,
+    Navbar
   },
-  setup() {
-    const selectedDate = ref(null);
-
-    const isRecurring = ref(false);
-    const selectedDayOfWeek = ref(null); 
-    const recurringOption = ref("single");
-
-    const reasons = ref("");
-    const showCalendar = ref(false);
-
-    const today = new Date();
-    const twoMonthsAgo = new Date();
-    const threeMonthsAhead = new Date();
-
-    twoMonthsAgo.setMonth(today.getMonth() - 2);
-    threeMonthsAhead.setMonth(today.getMonth() + 3);
-
-    const calendarOptions = {
-      plugins: [dayGridPlugin, interactionPlugin],
-      initialView: 'dayGridMonth',
-      selectable: true,
-      validRange: {
-        start: twoMonthsAgo.toISOString().split('T')[0],  // Format as YYYY-MM-DD
-        end: threeMonthsAhead.toISOString().split('T')[0]
-      },
-      dateClick: handleDateClick,
-    };
-
-    function handleDateClick(info) {
-      const clickedDate = new Date(info.dateStr);
-      if (clickedDate >= twoMonthsAgo && clickedDate <= threeMonthsAhead) {
-        selectedDate.value = selectedDate.value === info.dateStr ? null : info.dateStr;
-        closeCalendar();
-        showModal.value = true;  // Show the modal after clicking a valid date
-  
-      } else {
-        alert("Date is out of the allowed range!");
-      }
-    }
-
-
-    function toggleCalendar() {
-      showCalendar.value = !showCalendar.value; // Toggle calendar visibility
-    }
-
-    function closeCalendar() {
-      showCalendar.value = false; // Close the calendar popup
-    }
-
-    function getRecurringDates(dayOfWeek) {
-      // compute recurring dates for selectedDayOfWeek for next 3 mths
-
-      const recurringDates = [];
-      let currentDate = new Date();
-
-      // e.g. if today is WED (currentDate.getDay()=3)
-      // and user selects MON (dayOfWeek=1),
-      // the immediate recurring date will be 5 days from today
-      let dayOffset = (dayOfWeek + 7 - currentDate.getDay()) % 7;
-        // %7 keeps the offset within 0-6 days
-
-      // set currentDate to the first recurrence of selectedDayOfWeek
-      currentDate.setDate(currentDate.getDate() + dayOffset);
-
-      while (currentDate <= threeMonthsAhead) {
-        recurringDates.push(currentDate.toISOString().split('T')[0]); // Format YYYY-MM-DD
-        currentDate.setDate(currentDate.getDate() + 7); // Move to the next week
-      }
-
-      return recurringDates;
-    }
-
-    function applyDate() {
-      // validations
-      if (!reasons.value) { alert('Provide a reason.'); return; }
-
-      // single-day arrangement
-      if (recurringOption.value === 'single' && selectedDate.value) {
-        fetchDates([selectedDate.value], false);
-      }
-      // recurring arrangement
-      else if (recurringOption.value === 'recurring' && selectedDate.value) {
-        const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-        // takes the index day that matches the selected day in form
-        const recurringDates = getRecurringDates(daysOfWeek.indexOf(selectedDayOfWeek.value));
-        fetchDates(recurringDates, true);
-      }
-
-      function fetchDates(dates, isRecurring) {
-        fetch(`${import.meta.env.VITE_API_URL}/api/save-date/${userData.staff_id}`, { // to integrate with backend over here 
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            dates: dates, // local var
-            recurring: isRecurring, // local var
-            reasons: reasons.value,
-          }),
-        })
-          .then(response => response.json())
-          .then(data => {
-            // const dateObj = new Date(selectedDate.value);
-            // const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-            // const dayName = daysOfWeek[dateObj.getDay()];
-
-            if (isRecurring) {
-              alert(`${selectedDayOfWeek.value} applied recurring successfully`);
-            } else {
-              alert(`${dates[0]} applied successfully`);
-            }
-            closeModal(); // Close the modal after applying the date
-          })
-          .catch(error => {
-            console.error('Error:', error);
-          });
-      }
-    }
-
-      
-
+  data() {
     return {
-      selectedDate,
-      isRecurring,
-      reasons,
-      showCalendar,
-      calendarOptions,
-      toggleCalendar,
-      closeCalendar,
-      handleDateClick,
-      applyDate,
-      selectedDayOfWeek,
-      recurringOption
-    };
+      startDate: '',
+      endDate: '',
+      isRecurring: false,
+      showRecurringWarning: false,
+      reason: '',
+      startDateError: '',
+      endDateError: ''
+    }
   },
-});
+  computed: {
+    minStartDate() {
+      const date = new Date();
+      date.setMonth(date.getMonth() - 2);
+      return this.formatDate(date);
+    },
+    maxDate() {
+      const date = new Date();
+      date.setMonth(date.getMonth() + 3);
+      return this.formatDate(date);
+    },
+    isRecurringDisabled() {
+      return !this.startDate;
+    },
+    isFormValid() {
+      return this.startDate && (!this.isRecurring || this.endDate) && this.reason && !this.startDateError && !this.endDateError;
+    }
+  },
+  methods: {
+    formatDate(date) {
+      return date.toISOString().split('T')[0];
+    },
+    handleRecurringChange() {
+      if (!this.startDate || this.startDateError) {
+        this.showRecurringWarning = true;
+        this.isRecurring = false;
+      } else {
+        this.showRecurringWarning = false;
+        if (!this.isRecurring) {
+          this.endDate = '';
+        }
+      }
+      this.validateDates();
+    },
+    validateDates() {
+      this.startDateError = '';
+      this.endDateError = '';
+
+      const startDate = new Date(this.startDate);
+      const endDate = new Date(this.endDate);
+      const minDate = new Date(this.minStartDate);
+      const maxDate = new Date(this.maxDate);
+      const twoMonthsAgo = new Date();
+      twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+      const threeMonthsAhead = new Date();
+      threeMonthsAhead.setMonth(threeMonthsAhead.getMonth() + 3);
+
+      if (startDate < twoMonthsAgo) {
+        this.startDateError = 'Start date cannot be more than 2 months ago.';
+      } else if (startDate > threeMonthsAhead) {
+        this.startDateError = 'Start date cannot be more than 3 months ahead.';
+      } else if (startDate < minDate || startDate > maxDate) {
+        this.startDateError = 'Start date must be within the allowed range.';
+      }
+
+      if (this.isRecurring) {
+        if (endDate <= startDate) {
+          this.endDateError = 'End date must be after the start date.';
+        } else if (endDate < twoMonthsAgo) {
+          this.endDateError = 'End date cannot be more than 2 months ago.';
+        } else if (endDate > threeMonthsAhead) {
+          this.endDateError = 'End date cannot be more than 3 months ahead.';
+        } else if (endDate < minDate || endDate > maxDate) {
+          this.endDateError = 'End date must be within the allowed range.';
+        }
+      }
+    }
+,
+    submitForm() {
+      if (this.isFormValid) {
+        console.log('Form submitted:', {
+          startDate: this.startDate,
+          endDate: this.endDate,
+          isRecurring: this.isRecurring,
+          reason: this.reason
+        });
+        // TODO: Implement your form submission logic here
+
+      }
+    }
+  }
+}
 </script>
 
-    
-  <style>
-  .login-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('@/assets/images/login-image.jpg');
-    background-size: cover;
-    background-position: center;
-  }
-  
-  .form-container {
-    background-color: white; /* Ensures that the form has a visible background */
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    width: 400px; /* Set a fixed width for better alignment */
-  }
-  
-  .form-field {
-    margin-bottom: 15px; /* Space between each field */
-    display: flex;
-    flex-direction: column; /* Arrange label and input vertically */
-  }
-  
-  .input-field {
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-  
-  .calendar-icon {
-    cursor: pointer;
-    margin-top: 5px; /* Space above the icon */
-    font-size: 20px; /* Adjust size as needed */
-  }
-  
-  .apply-button {
-    padding: 10px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  
-  .apply-button:hover {
-    background-color: #0056b3; /* Darker blue on hover */
-  }
-  
-  /* Calendar popup styles */
-  .calendar-popup {
-  position: absolute; 
-  top: 50%; 
-  left: 50%; 
-  transform: translate(-50%, -50%); 
-  width: 500px; 
-  height: 450px; /* Set fixed height */
-  overflow: hidden; 
-  background-color: white; 
-  border: 1px solid #ccc; 
-  border-radius: 8px; 
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); 
-  z-index: 1000; 
+<style scoped>
+.background-container {
+  background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('@/assets/images/login-image.jpg');
+  background-size: cover;
+  background-position: center;
+  min-height: calc(100vh - 56px);
+  display: flex;
+  align-items: center;
 }
 
-.fc {
-  height: 100%; 
+.custom-card {
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  border: none;
+  border-radius: 15px;
+  overflow: hidden;
 }
 
-.fc-daygrid {
-  height: 100%; 
+.card-header {
+  background-color: #141b4d;
+  color: white;
+  padding: 1.5rem;
+  border-bottom: none;
 }
 
-.fc-daygrid-day {
-  height: 50px; /* Set fixed height for each day */
-  min-height: 50px; /* Ensure a minimum height */
+.card-header h2 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 0;
+}
+
+.card-body {
+  padding: 2rem;
+  background-color: #f8f9fa;
+}
+
+.form-label {
+  font-weight: 600;
+  color: #141b4d;
+  margin-bottom: 0.5rem;
+}
+
+.form-control, .input-group-text {
+  border-color: #d1d5db;
+}
+
+.form-control:focus {
+  border-color: #141b4d;
+  box-shadow: 0 0 0 0.2rem rgba(20, 27, 77, 0.25);
+}
+
+.input-group-text {
+  background-color: #e9ecef;
+  color: #141b4d;
+}
+
+.form-check-input:checked {
+  background-color: #141b4d;
+  border-color: #141b4d;
+}
+
+.btn-primary {
+  background-color: #141b4d;
+  border-color: #141b4d;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  transition: all 0.3s ease;
+  display: block;
+  margin: 0 auto;
 }
 
 
-  </style>
-  
+.btn-primary:hover, .btn-primary:focus {
+  background-color: #1e2a6d;
+  border-color: #1e2a6d;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .card-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .card-body {
+    padding: 1.5rem;
+  }
+}
+</style>
