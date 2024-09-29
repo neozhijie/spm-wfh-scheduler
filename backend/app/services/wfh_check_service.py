@@ -29,12 +29,12 @@ class WFHCheckService:
         print("applied count:" +str(applied_count))
 
         if ((department_count - applied_count) / department_count) < 0.5:
-            print("too many lazy people")
+            print("Exceeded Limit")
             print(applied_count / department_count)
-            return('1')
+            return("Exceeded Limit")
         else:
-            print("ok")
-            return('2')
+            print("Success")
+            return("Success")
 
 
     # @staticmethod

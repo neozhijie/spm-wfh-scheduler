@@ -1,5 +1,6 @@
 from app import db
 from app.models.wfh_request import WFHRequest
+from app.services.wfh_schedule_service import WFHScheduleService
 from datetime import datetime, timedelta, date
 
 class WFHRequestService:
@@ -63,7 +64,7 @@ class WFHRequestService:
     
 
     @staticmethod
-    def update_request(request_id, new_request_status, two_months_ago, reason):   #new_request_status = approved / rejected
+    def update_request(request_id, new_request_status, two_months_ago, reason, dept, position, duration):   #new_request_status = approved / rejected
         # Fetch the request by its ID
         request = WFHRequest.query.get(request_id)
         
@@ -80,6 +81,10 @@ class WFHRequestService:
                 # provide reason for reject
                 if new_request_status == 'REJECTED':
                     request.reason_for_rejection = reason
+                
+                elif new_request_status == 'APPROVED':
+                    WFHScheduleService.create_schedule(request_id, request.staff_id, request.manager_id, request.start_date, request.end_date, duration, dept, position)
+
 
             # not within date range = not suppose to approve
             else:
