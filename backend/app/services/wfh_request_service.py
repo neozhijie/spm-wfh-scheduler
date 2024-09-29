@@ -62,44 +62,49 @@ class WFHRequestService:
     def get_pending_requests_for_manager(manager_id):
         return WFHRequest.query.filter_by(manager_id=manager_id, status='PENDING').all()
     
+
     @staticmethod
-    def update_request(request_id, new_request_status, two_months_ago, reason=None):   # new_request_status = approved / rejected
+    def update_request(request_id, new_request_status, two_months_ago, reason):   #new_request_status = approved / rejected
         # Fetch the request by its ID
         request = WFHRequest.query.get(request_id)
         
         # Check if the request exists
         if request:
-            # Check if the request is within the valid date range
+            
+            # Check if within date range
             request_date = request.start_date
-            if WFHRequestService.check_date(request_date, two_months_ago):
-                
-                # Update the status of the request
+            if WFHRequestService.check_date(request_date , two_months_ago):
+
+                # Update the status field
                 request.status = new_request_status
-                
-                # If the request is rejected, store the reason
+
+                # provide reason for reject
                 if new_request_status == 'REJECTED':
-                    request.reason_for_rejection = reason or "No reason provided"
-                    db.session.commit()
+                    request.reason_for_rejection = reason
                     return True
                 
-                # If the request is approved, update the associated schedule
                 elif new_request_status == 'APPROVED':
-                    schedules_updated = WFHScheduleService.update_schedule(request_id)
-                    
-                    # Check if schedules were successfully updated
-                    if isinstance(schedules_updated, bool) and schedules_updated:
-                        db.session.commit()  # Commit the updates
+                    if WFHScheduleService.update_schedule(request_id) == True:
                         return True
                     else:
-                        return f"Error occurred while updating schedules for request_id: {request_id}"
-            
+                        return "Error Occured"
+
+
+            # not within date range = not suppose to approve
             else:
-                # The request date is not within the valid date range
-                return "The request is invalid or outside the acceptable date range."
+                return "The date is invalid to be approved"
+            
+            # Commit the updated record to the database
+            db.session.commit()
+
+            # happy path 
+            return True
         
-        # If no request was found with the given request_id
-        return "Request does not exist."
-    
+        else:
+
+            # Request does not exist
+            return "Request Does not Exist!"
+        
     @staticmethod
     def reject_expired(two_months_ago):
         # Fetch all requests from the database
