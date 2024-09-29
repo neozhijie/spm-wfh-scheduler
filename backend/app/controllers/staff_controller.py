@@ -17,7 +17,8 @@ def login():
     if not staff:
         return jsonify({"message": "Invalid email or password"}), 401
     
-    staff_details = StaffService.get_staff_details(staff)
+    staff_details = staff.to_dict()
+    print(staff_details)
     return jsonify({
         "message": "Login successful",
         **staff_details
