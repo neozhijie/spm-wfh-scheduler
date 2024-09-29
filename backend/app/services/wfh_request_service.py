@@ -16,7 +16,9 @@ class WFHRequestService:
             
 
         # Check if the end date is valid for recurring requests
+        
         if end_date:
+            end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
             if start_date >= end_date:
                 raise ValueError("End date must be after start date.")
 
