@@ -8,148 +8,148 @@ from app.services.wfh_request_service import WFHRequestService
 
 
 class WFHRequestServiceTestCase(unittest.TestCase):
-    # def setUp(self):
-    #     self.app = create_app(TestConfig)
-    #     self.app_context = self.app.app_context()
-    #     self.app_context.push()
+    def setUp(self):
+        self.app = create_app(TestConfig)
+        self.app_context = self.app.app_context()
+        self.app_context.push()
 
-    #     db.create_all()
+        db.create_all()
 
-    #     staff1 = Staff(
-    #         staff_id=1,
-    #         staff_fname="Test",
-    #         staff_lname="Director",
-    #         dept="Test Department",
-    #         position="Director",
-    #         country="Test Country",
-    #         email="director@test.com",
-    #         reporting_manager=None,
-    #         role=1,
-    #         password="testpassword1",
-    #     )
-    #     staff2 = Staff(
-    #         staff_id=2,
-    #         staff_fname="Test",
-    #         staff_lname="Manager",
-    #         dept="Test Department",
-    #         position="Manager",
-    #         country="Test Country",
-    #         email="manager@test.com",
-    #         reporting_manager=1,
-    #         role=3,
-    #         password="testpassword3",
-    #     )
-    #     staff3 = Staff(
-    #         staff_id=3,
-    #         staff_fname="Test",
-    #         staff_lname="Staff",
-    #         dept="Test Department",
-    #         position="Staff",
-    #         country="Test Country",
-    #         email="staff@test.com",
-    #         reporting_manager=2,
-    #         role=2,
-    #         password="testpassword2",
-    #     )
-    #     db.session.add_all([staff1, staff2, staff3])
-    #     db.session.commit()
+        staff1 = Staff(
+            staff_id=1,
+            staff_fname="Test",
+            staff_lname="Director",
+            dept="Test Department",
+            position="Director",
+            country="Test Country",
+            email="director@test.com",
+            reporting_manager=None,
+            role=1,
+            password="testpassword1",
+        )
+        staff2 = Staff(
+            staff_id=2,
+            staff_fname="Test",
+            staff_lname="Manager",
+            dept="Test Department",
+            position="Manager",
+            country="Test Country",
+            email="manager@test.com",
+            reporting_manager=1,
+            role=3,
+            password="testpassword3",
+        )
+        staff3 = Staff(
+            staff_id=3,
+            staff_fname="Test",
+            staff_lname="Staff",
+            dept="Test Department",
+            position="Staff",
+            country="Test Country",
+            email="staff@test.com",
+            reporting_manager=2,
+            role=2,
+            password="testpassword2",
+        )
+        db.session.add_all([staff1, staff2, staff3])
+        db.session.commit()
 
-    #     self.staff1 = staff1
-    #     self.staff2 = staff2
-    #     self.staff3 = staff3
+        self.staff1 = staff1
+        self.staff2 = staff2
+        self.staff3 = staff3
 
-    # def tearDown(self):
-    #     db.session.remove()
-    #     db.drop_all()
-    #     self.app_context.pop()
+    def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+        self.app_context.pop()
 
-    # def test_create_request_success(self):
-    #     today = datetime.now().date()
-    #     start_date = (today + timedelta(days=5)).strftime("%Y-%m-%d")
-    #     end_date = None
-    #     wfh_request = WFHRequestService.create_request(
-    #         staff_id=self.staff3.staff_id,
-    #         manager_id=self.staff2.staff_id,
-    #         request_date=today,
-    #         start_date=start_date,
-    #         end_date=end_date,
-    #         reason_for_applying="Need to work from home",
-    #     )
-    #     self.assertIsNotNone(wfh_request)
-    #     self.assertEqual(wfh_request.staff_id, self.staff3.staff_id)
+    def test_create_request_success(self):
+        today = datetime.now().date()
+        start_date = (today + timedelta(days=5)).strftime("%Y-%m-%d")
+        end_date = None
+        wfh_request = WFHRequestService.create_request(
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            request_date=today,
+            start_date=start_date,
+            end_date=end_date,
+            reason_for_applying="Need to work from home",
+        )
+        self.assertIsNotNone(wfh_request)
+        self.assertEqual(wfh_request.staff_id, self.staff3.staff_id)
 
-    # def test_create_request_invalid_start_date(self):
-    #     today = datetime.now().date()
-    #     invalid_start_date = (today - timedelta(days=61)).strftime("%Y-%m-%d")
-    #     with self.assertRaises(ValueError) as context:
-    #         WFHRequestService.create_request(
-    #             staff_id=self.staff3.staff_id,
-    #             manager_id=self.staff2.staff_id,
-    #             request_date=today,
-    #             start_date=invalid_start_date,
-    #             end_date=None,
-    #             reason_for_applying="Need to work from home",
-    #         )
-    #     self.assertEqual(
-    #         str(context.exception),
-    #         "Start date must be between 2 months ago and 3 months from now.",
-    #     )
+    def test_create_request_invalid_start_date(self):
+        today = datetime.now().date()
+        invalid_start_date = (today - timedelta(days=61)).strftime("%Y-%m-%d")
+        with self.assertRaises(ValueError) as context:
+            WFHRequestService.create_request(
+                staff_id=self.staff3.staff_id,
+                manager_id=self.staff2.staff_id,
+                request_date=today,
+                start_date=invalid_start_date,
+                end_date=None,
+                reason_for_applying="Need to work from home",
+            )
+        self.assertEqual(
+            str(context.exception),
+            "Start date must be between 2 months ago and 3 months from now.",
+        )
 
-    # def test_create_request_invalid_end_date(self):
-    #     today = datetime.now().date()
-    #     start_date = (today + timedelta(days=5)).strftime("%Y-%m-%d")
-    #     end_date = (today + timedelta(days=4)).strftime("%Y-%m-%d")
-    #     with self.assertRaises(ValueError) as context:
-    #         WFHRequestService.create_request(
-    #             staff_id=self.staff3.staff_id,
-    #             manager_id=self.staff2.staff_id,
-    #             request_date=today,
-    #             start_date=start_date,
-    #             end_date=end_date,
-    #             reason_for_applying="Need to work from home",
-    #         )
-    #     self.assertEqual(str(context.exception), "End date must be after start date.")
+    def test_create_request_invalid_end_date(self):
+        today = datetime.now().date()
+        start_date = (today + timedelta(days=5)).strftime("%Y-%m-%d")
+        end_date = (today + timedelta(days=4)).strftime("%Y-%m-%d")
+        with self.assertRaises(ValueError) as context:
+            WFHRequestService.create_request(
+                staff_id=self.staff3.staff_id,
+                manager_id=self.staff2.staff_id,
+                request_date=today,
+                start_date=start_date,
+                end_date=end_date,
+                reason_for_applying="Need to work from home",
+            )
+        self.assertEqual(str(context.exception), "End date must be after start date.")
 
-    # def test_create_request_existing_request(self):
-    #     today = datetime.now().date()
-    #     start_date = (today + timedelta(days=5)).strftime("%Y-%m-%d")
-    #     WFHRequestService.create_request(
-    #         staff_id=self.staff3.staff_id,
-    #         manager_id=self.staff2.staff_id,
-    #         request_date=today,
-    #         start_date=start_date,
-    #         end_date=None,
-    #         reason_for_applying="First request",
-    #     )
-    #     with self.assertRaises(ValueError) as context:
-    #         WFHRequestService.create_request(
-    #             staff_id=self.staff3.staff_id,
-    #             manager_id=self.staff2.staff_id,
-    #             request_date=today,
-    #             start_date=start_date,
-    #             end_date=None,
-    #             reason_for_applying="Second request",
-    #         )
-    #     self.assertEqual(
-    #         str(context.exception), "A request for this date already exists."
-    #     )
+    def test_create_request_existing_request(self):
+        today = datetime.now().date()
+        start_date = (today + timedelta(days=5)).strftime("%Y-%m-%d")
+        WFHRequestService.create_request(
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            request_date=today,
+            start_date=start_date,
+            end_date=None,
+            reason_for_applying="First request",
+        )
+        with self.assertRaises(ValueError) as context:
+            WFHRequestService.create_request(
+                staff_id=self.staff3.staff_id,
+                manager_id=self.staff2.staff_id,
+                request_date=today,
+                start_date=start_date,
+                end_date=None,
+                reason_for_applying="Second request",
+            )
+        self.assertEqual(
+            str(context.exception), "A request for this date already exists."
+        )
 
-    # def test_get_pending_requests_for_manager(self):
-    #     today = datetime.now().date()
-    #     start_date = (today + timedelta(days=5)).strftime("%Y-%m-%d")
-    #     WFHRequestService.create_request(
-    #         staff_id=self.staff3.staff_id,
-    #         manager_id=self.staff2.staff_id,
-    #         request_date=today,
-    #         start_date=start_date,
-    #         end_date=None,
-    #         reason_for_applying="Need to work from home",
-    #     )
-    #     pending_requests = WFHRequestService.get_pending_requests_for_manager(
-    #         self.staff2.staff_id
-    #     )
-    #     self.assertEqual(len(pending_requests), 1)
-    #     self.assertEqual(pending_requests[0].staff_id, self.staff3.staff_id)
+    def test_get_pending_requests_for_manager(self):
+        today = datetime.now().date()
+        start_date = (today + timedelta(days=5)).strftime("%Y-%m-%d")
+        WFHRequestService.create_request(
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            request_date=today,
+            start_date=start_date,
+            end_date=None,
+            reason_for_applying="Need to work from home",
+        )
+        pending_requests = WFHRequestService.get_pending_requests_for_manager(
+            self.staff2.staff_id
+        )
+        self.assertEqual(len(pending_requests), 1)
+        self.assertEqual(pending_requests[0].staff_id, self.staff3.staff_id)
 
     def test_update_request_success(self):
         today = datetime.now().date()
@@ -171,6 +171,7 @@ class WFHRequestServiceTestCase(unittest.TestCase):
         )
         self.assertTrue(response)
         updated_request = WFHRequest.query.get(wfh_request.request_id)
+        print(updated_request)
         self.assertEqual(updated_request.status, "APPROVED")
 
     def test_update_request_invalid_date(self):
