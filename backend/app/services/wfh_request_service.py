@@ -83,7 +83,7 @@ class WFHRequestService:
                     request.reason_for_rejection = reason
                   # if approved
                 elif new_request_status == 'APPROVED':
-                    WFHScheduleService.update_schedule(request_id)
+                    return WFHScheduleService.update_schedule(request_id)
 
 
             # not within date range = not suppose to approve
