@@ -11,6 +11,7 @@
               </div>
               <div class="card-body">
                 <form @submit.prevent="submitForm">
+                  <!-- Start Date Field -->
                   <div class="mb-4">
                     <label for="startDate" class="form-label">Start Date</label>
                     <div class="input-group">
@@ -30,7 +31,48 @@
                       {{ startDateError }}
                     </div>
                   </div>
-                  
+
+                  <!-- Day Type Selection -->
+                  <div class="mb-4">
+                    <label class="form-label">Select Day Type</label>
+                    <div>
+                      <div class="form-check form-check-inline">
+                        <input
+                          class="form-check-input"
+                          type="radio"
+                          id="fullDay"
+                          value="FULL_DAY"
+                          v-model="dayType"
+                          required
+                        >
+                        <label class="form-check-label" for="fullDay">Full Day</label>
+                      </div>
+                      <div class="form-check form-check-inline">
+                        <input
+                          class="form-check-input"
+                          type="radio"
+                          id="halfDayAm"
+                          value="HALF_DAY_AM"
+                          v-model="dayType"
+                          required
+                        >
+                        <label class="form-check-label" for="halfDayAm">Half Day (AM)</label>
+                      </div>
+                      <div class="form-check form-check-inline">
+                        <input
+                          class="form-check-input"
+                          type="radio"
+                          id="halfDayPm"
+                          value="HALF_DAY_PM"
+                          v-model="dayType"
+                          required
+                        >
+                        <label class="form-check-label" for="halfDayPm">Half Day (PM)</label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Recurring Request Checkbox -->
                   <div class="mb-4 form-check">
                     <input
                       type="checkbox"
@@ -45,7 +87,8 @@
                       Please select a valid start date before making this a recurring request.
                     </div>
                   </div>
-                  
+
+                  <!-- End Date Field (Conditional) -->
                   <div v-if="isRecurring" class="mb-4">
                     <label for="endDate" class="form-label">End Date</label>
                     <div class="input-group">
@@ -65,7 +108,8 @@
                       {{ endDateError }}
                     </div>
                   </div>
-                  
+
+                  <!-- Reason Field -->
                   <div class="mb-4">
                     <label for="reason" class="form-label">Reason</label>
                     <textarea
@@ -76,8 +120,15 @@
                       required
                     ></textarea>
                   </div>
-                  
-                  <button type="submit" class="btn btn-primary btn-lg w-40" :disabled="!isFormValid">Submit Request</button>
+
+                  <!-- Submit Button -->
+                  <button
+                    type="submit"
+                    class="btn btn-primary btn-lg w-40"
+                    :disabled="!isFormValid"
+                  >
+                    Submit Request
+                  </button>
                 </form>
               </div>
             </div>
@@ -86,11 +137,11 @@
       </div>
     </div>
   </div>
+
 </template>
 
 <script>
 import Navbar from '@/components/Navbar.vue'
-
 export default {
   components: {
     Navbar
@@ -103,7 +154,8 @@ export default {
       showRecurringWarning: false,
       reason: '',
       startDateError: '',
-      endDateError: ''
+      endDateError: '',
+      dayType: ''
     }
   },
   computed: {
@@ -121,74 +173,81 @@ export default {
       return !this.startDate;
     },
     isFormValid() {
-      return this.startDate && (!this.isRecurring || this.endDate) && this.reason && !this.startDateError && !this.endDateError;
+      return (
+        this.startDate &&
+        (!this.isRecurring || this.endDate) &&
+        this.reason &&
+        this.dayType &&
+        !this.startDateError &&
+        !this.endDateError
+      );
     }
   },
   methods: {
-  formatDate(date) {
-    return date.toISOString().split('T')[0];
-  },
-  handleRecurringChange() {
-    if (!this.startDate || this.startDateError) {
-      this.showRecurringWarning = true;
-      this.isRecurring = false;
-    } else {
-      this.showRecurringWarning = false;
-      if (!this.isRecurring) {
-        this.endDate = '';
+    formatDate(date) {
+      return date.toISOString().split('T')[0];
+    },
+    handleRecurringChange() {
+      if (!this.startDate || this.startDateError) {
+        this.showRecurringWarning = true;
+        this.isRecurring = false;
+      } else {
+        this.showRecurringWarning = false;
+        if (!this.isRecurring) {
+          this.endDate = '';
+        }
       }
-    }
-    this.validateDates();
-  },
-  validateDates() {
-    this.startDateError = '';
-    this.endDateError = '';
+      this.validateDates();
+    },
+    validateDates() {
+      this.startDateError = '';
+      this.endDateError = '';
 
-    const startDate = new Date(this.startDate);
-    const endDate = new Date(this.endDate);
-    const minDate = new Date(this.minStartDate);
-    const maxDate = new Date(this.maxDate);
-    const twoMonthsAgo = new Date();
-    twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
-    const threeMonthsAhead = new Date();
-    threeMonthsAhead.setMonth(threeMonthsAhead.getMonth() + 3);
+      const startDate = new Date(this.startDate);
+      const endDate = new Date(this.endDate);
+      const minDate = new Date(this.minStartDate);
+      const maxDate = new Date(this.maxDate);
+      const twoMonthsAgo = new Date();
+      twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+      const threeMonthsAhead = new Date();
+      threeMonthsAhead.setMonth(threeMonthsAhead.getMonth() + 3);
 
-    // Check if the start date is a weekend
-    if (startDate.getDay() === 0 || startDate.getDay() === 6) {
-      this.startDateError = 'Start date cannot be a weekend.';
-    } else if (startDate < twoMonthsAgo) {
-      this.startDateError = 'Start date cannot be more than 2 months ago.';
-    } else if (startDate > threeMonthsAhead) {
-      this.startDateError = 'Start date cannot be more than 3 months ahead.';
-    } else if (startDate < minDate || startDate > maxDate) {
-      this.startDateError = 'Start date must be within the allowed range.';
-    }
-
-    if (this.isRecurring) {
-      if (endDate <= startDate) {
-        this.endDateError = 'End date must be after the start date.';
-      } else if (endDate < twoMonthsAgo) {
-        this.endDateError = 'End date cannot be more than 2 months ago.';
-      } else if (endDate > threeMonthsAhead) {
-        this.endDateError = 'End date cannot be more than 3 months ahead.';
-      } else if (endDate < minDate || endDate > maxDate) {
-        this.endDateError = 'End date must be within the allowed range.';
+      // Check if the start date is a weekend
+      if (startDate.getDay() === 0 || startDate.getDay() === 6) {
+        this.startDateError = 'Start date cannot be a weekend.';
+      } else if (startDate < twoMonthsAgo) {
+        this.startDateError = 'Start date cannot be more than 2 months ago.';
+      } else if (startDate > threeMonthsAhead) {
+        this.startDateError = 'Start date cannot be more than 3 months ahead.';
+      } else if (startDate < minDate || startDate > maxDate) {
+        this.startDateError = 'Start date must be within the allowed range.';
       }
-    }
-  },
-  submitForm() {
-    if (this.isFormValid) {
-      console.log('Form submitted:', {
-        startDate: this.startDate,
-        endDate: this.endDate,
-        isRecurring: this.isRecurring,
-        reason: this.reason
-      });
-      // TODO: Implement your form submission logic here
+
+      if (this.isRecurring) {
+        if (endDate <= startDate) {
+          this.endDateError = 'End date must be after the start date.';
+        } else if (endDate < twoMonthsAgo) {
+          this.endDateError = 'End date cannot be more than 2 months ago.';
+        } else if (endDate > threeMonthsAhead) {
+          this.endDateError = 'End date cannot be more than 3 months ahead.';
+        } else if (endDate < minDate || endDate > maxDate) {
+          this.endDateError = 'End date must be within the allowed range.';
+        }
+      }
+    },
+    submitForm() {
+      if (this.isFormValid) {
+        console.log('Form submitted:', {
+          startDate: this.startDate,
+          endDate: this.endDate,
+          isRecurring: this.isRecurring,
+          dayType: this.dayType,
+          reason: this.reason
+        });
+        // TODO: Implement your form submission logic here
+      }
     }
   }
-}
-
 }
 </script>
 
@@ -252,6 +311,11 @@ export default {
   border-color: #141b4d;
 }
 
+.form-check-label {
+  margin-right: 1rem;
+  color: #141b4d;
+}
+
 .btn-primary {
   background-color: #141b4d;
   border-color: #141b4d;
@@ -261,7 +325,6 @@ export default {
   display: block;
   margin: 0 auto;
 }
-
 
 .btn-primary:hover, .btn-primary:focus {
   background-color: #1e2a6d;
