@@ -211,7 +211,81 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
         self.assertEqual(str(context.exception), "No schedules were created")
         deleted_request = WFHRequest.query.get(wfh_request.request_id)
         self.assertIsNone(deleted_request)
+    
 
 
+    ############## LIST OF TEST FOR UPDATE_SCHEDULE ##############
+    def test_update_schedule_single_date(self):
+        today = datetime.now().date()
+        start_date = today + timedelta(days=5)
+        existing_schedule = WFHSchedule(
+            request_id= 1,
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            date= start_date,
+            duration="FULL_DAY",
+            dept=self.staff3.dept,
+            position=self.staff3.position,
+        )
+        db.session.add(existing_schedule)
+        db.session.commit()
+
+        updated_schedule = WFHScheduleService.update_schedule(
+            request_id=1
+        )
+
+        self.assertEqual(updated_schedule, True)
+        self.assertEqual(existing_schedule.status, "APPROVED")
+
+    def test_update_schedule_recurring(self):
+        today = datetime.now().date()
+
+        for i in range(3):
+            start_date = today + timedelta(days=5)
+            existing_schedule1 = WFHSchedule(
+            request_id= 1,
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            date= start_date,
+            duration="FULL_DAY",
+            dept=self.staff3.dept,
+            position=self.staff3.position,
+        )
+        existing_schedule2 = WFHSchedule(
+            request_id= 1,
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            date= start_date + timedelta(days=7),
+            duration="FULL_DAY",
+            dept=self.staff3.dept,
+            position=self.staff3.position,
+        )
+        existing_schedule3 = WFHSchedule(
+            request_id= 1,
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            date= start_date + + timedelta(days=14),
+            duration="FULL_DAY",
+            dept=self.staff3.dept,
+            position=self.staff3.position,
+        )
+        db.session.add_all([existing_schedule1, existing_schedule2, existing_schedule3])
+        db.session.commit()
+
+        updated_schedule = WFHScheduleService.update_schedule(
+            request_id=1)
+
+        self.assertEqual(updated_schedule, True)
+        self.assertEqual(existing_schedule1.status, "APPROVED")
+        self.assertEqual(existing_schedule2.status, "APPROVED")
+        self.assertEqual(existing_schedule3.status, "APPROVED")
+
+    def test_update_schedule_schedule_not_exist(self):
+        with self.assertRaises(ValueError) as context:
+            WFHScheduleService.update_schedule(request_id=1)
+    
+        # Check if the error message is as expected
+        self.assertEqual(str(context.exception), "No schedules found for request_id: 1")
+        
 if __name__ == "__main__":
     unittest.main()
