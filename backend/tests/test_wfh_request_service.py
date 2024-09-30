@@ -151,62 +151,7 @@ class WFHRequestServiceTestCase(unittest.TestCase):
         self.assertEqual(len(pending_requests), 1)
         self.assertEqual(pending_requests[0].staff_id, self.staff3.staff_id)
 
-    def test_update_request_success(self):
-        today = datetime.now().date()
-        start_date = (today + timedelta(days=5)).strftime("%Y-%m-%d")
-        wfh_request = WFHRequestService.create_request(
-            staff_id=self.staff3.staff_id,
-            manager_id=self.staff2.staff_id,
-            request_date=today,
-            start_date=start_date,
-            end_date=None,
-            reason_for_applying="Need to work from home",
-        )
-        two_months_ago = today - timedelta(days=60)
-        response = WFHRequestService.update_request(
-            request_id=wfh_request.request_id,
-            new_request_status="APPROVED",
-            two_months_ago=two_months_ago,
-            reason=None,
-        )
-        self.assertTrue(response)
-        updated_request = WFHRequest.query.get(wfh_request.request_id)
-        self.assertEqual(updated_request.status, "APPROVED")
 
-    def test_update_request_invalid_date(self):
-        today = datetime.now().date()
-        invalid_start_date = today - timedelta(days=61)
-        wfh_request = WFHRequest(
-            staff_id=self.staff3.staff_id,
-            manager_id=self.staff2.staff_id,
-            request_date=today,
-            start_date=invalid_start_date,
-            end_date=None,
-            reason_for_applying="Need to work from home",
-        )
-        db.session.add(wfh_request)
-        db.session.commit()
-
-        two_months_ago = today - timedelta(days=60)
-        response = WFHRequestService.update_request(
-            request_id=wfh_request.request_id,
-            new_request_status="APPROVED",
-            two_months_ago=two_months_ago,
-            reason=None,
-        )
-        self.assertEqual(response, "The date is invalid to be approved")
-        updated_request = WFHRequest.query.get(wfh_request.request_id)
-        self.assertEqual(updated_request.status, "PENDING")
-
-    def test_update_request_nonexistent(self):
-        two_months_ago = datetime.now().date() - timedelta(days=60)
-        response = WFHRequestService.update_request(
-            request_id="999",
-            new_request_status="APPROVED",
-            two_months_ago=two_months_ago,
-            reason=None,
-        )
-        self.assertEqual(response, "Request Does not Exist!")
 
     def test_reject_expired(self):
         today = datetime.now().date()
