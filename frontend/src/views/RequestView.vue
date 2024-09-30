@@ -36,15 +36,19 @@
                       >
                     </td>
                     <td>
-                      <span><button class="btn-approve" >Approve</button></span>
+                      <span><button class="btn-approve" @click="approveRequest(request)" >Approve</button></span>
                       <span><button class="btn-rej" @click = "openRejectForm(request)">Reject</button></span>
                     </td>
                   </tr>
                 </tbody>
               </table>
-              <div v-if = "showForm" class = "form-container">
-                <form>
-                  <table class="table">
+              <div v-if="showForm" class="form-overlay">
+                <div class="form-container">
+                  <div class="form-header">
+                    <h3 class="form-title">Reject WFH Request</h3>
+                  </div>
+                  <div class="table-wrapper">
+                    <table class="table table-bordered" style="overflow:scroll;">
                     <thead class="thead-light">
                       <tr>
                         <th>Date Requested</th>
@@ -64,13 +68,19 @@
                       </tr>
                     </tbody>
                   </table>
-                  <label for="rej_reason">Reason for rejection:</label>
-                  <p><input type="text" id="rej_reason" v-model="rej_reason"></p>
-                  <p v-if="errorMessage" style="color: red;">{{ errorMessage }}</p>
 
-                  <button type="button" @click="submitRejection" class = "form-button">Submit</button>
-                  <button type="button" @click="closeForm" class = "form-button">Cancel</button>
-                </form>
+                  </div>
+
+                  <div class="form-group text-left px-5">
+                    <label for="rej_reason" class="form-label">Reason for rejection:</label>
+                    <textarea id="rej_reason" v-model="rej_reason" required class="form-control w-100" rows="3"></textarea>
+                  </div>
+                  <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+                  <div class="form-actions">
+                    <button type="button" @click="rejectRequest" class="btn btn-danger">Reject</button>
+                    <button type="button" @click="closeForm" class="btn btn-secondary">Cancel</button>
+                  </div>
+                </div>
               </div>
             </div>
             <p v-else class="text-muted">No pending requests.</p>
@@ -163,20 +173,50 @@ const openRejectForm = (request) => {
 
 const closeForm = () => {
   showForm.value = false;
+  rej_reason.value = '';
+  errorMessage.value = '';
   };
 
-const submitRejection = () => {
+const approveRequest = async (request) => {
+  try {
+    const response = await axios.patch(`${import.meta.env.VITE_API_URL}/api/update-request`, {
+      request_id: request.request_id,
+      request_status: 'APPROVED',
+      reason: ''
+    });
+    console.log('Approval response:', response.data);
+    // Refresh the pending requests list
+    await fetchPendingRequests();
+  } catch (error) {
+    console.error('Error approving request:', error);
+    alert('Error approving request');
+  }
+};
+
+const rejectRequest = async () => {
   if (!rej_reason.value.trim()) {
     errorMessage.value = 'Please provide a reason for rejection.';
-    return;  // Prevent submission
+    return;
   }
 
-  // Clear the error message if there is valid input
   errorMessage.value = '';
 
-  console.log(`Rejection reason for ${selectedRequest.value.request_id}: ${rej_reason.value}`);
-  closeForm();
-  };
+  try {
+    const response = await axios.patch(`${import.meta.env.VITE_API_URL}/api/update-request`, {
+      request_id: selectedRequest.value.request_id,
+      request_status: 'REJECTED',
+      reason: rej_reason.value
+    });
+    console.log('Rejection response:', response.data);
+    closeForm();
+    // Refresh the pending requests list
+    await fetchPendingRequests();
+  } catch (error) {
+    console.error('Error rejecting request:', error);
+    alert('Error rejecting request');
+  }
+};
+
 
 </script>
 
@@ -210,6 +250,11 @@ const submitRejection = () => {
   font-weight: 600;
 }
 
+.table-wrapper {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 .badge {
   font-weight: 500;
 }
@@ -237,7 +282,7 @@ button {
 
 button:hover {
   color: black;
-  font-weight: bold;
+  /* font-weight: bold; */
 }
 
 .form-container {
@@ -256,6 +301,16 @@ button:hover {
   justify-content: center;
   align-items: center;
   text-align: center;
+  padding: 0;
+}
+
+.form-header {
+  width: 100%;
+  background-color: #141b4d;
+  padding: 1rem;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  margin-bottom: 2rem;
 }
 
 .form-button {
@@ -264,7 +319,83 @@ button:hover {
 }
 
 #rej_reason {
-  width: 80%;
+  width: 100%;
   height: 40%;
+}
+.form-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.form-title {
+  color: white;
+  font-weight: bold;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+.form-label {
+  font-weight: 600;
+  color: #141b4d;
+  margin-bottom: 0.5rem;
+  display: block;
+  text-align: left;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.error-message {
+  color: #dc3545;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #c82333;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #5a6268;
 }
 </style>
