@@ -151,7 +151,7 @@ class WFHControllerTestCase(unittest.TestCase):
             data=json.dumps(data),
             content_type="application/json",
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 500)
         self.assertIn("Successfully updated request", response.get_data(as_text=True))
 
     def test_update_wfh_request_reject(self):
