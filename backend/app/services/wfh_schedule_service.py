@@ -17,7 +17,7 @@ class WFHScheduleService:
                 WFHSchedule.status != 'EXPIRED'
             ).first()
             
-            if existing_schedule:
+            if existing_schedule and existing_schedule.status != 'REJECTED':
                 print(f"Schedule for {current_date} already exists")
                 current_date += timedelta(days=7)  # Move to the next week
                 if end_date is None or current_date > end_date:

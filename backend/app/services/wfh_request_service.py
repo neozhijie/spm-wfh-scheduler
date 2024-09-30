@@ -42,7 +42,8 @@ class WFHRequestService:
             WFHRequest.status != 'EXPIRED'
         ).first()
 
-        if existing_request and (not end_date):
+        if existing_request and (not end_date) and existing_request.status != 'REJECTED':
+            
             raise ValueError("A request for this date already exists.")
 
         new_request = WFHRequest(
