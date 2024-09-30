@@ -76,7 +76,7 @@ class WFHCheckServiceTestCase(unittest.TestCase):
         # No one is scheduled to WFH
         date = datetime.now().date()
         result = WFHCheckService.check_department_count(self.staff1.staff_id, date)
-        self.assertEqual(result, "2")  # 'ok'
+        self.assertEqual(result, 'Success')  
 
     def test_check_department_count_above_threshold(self):
         # Schedule more than 50% staff to WFH
@@ -106,7 +106,7 @@ class WFHCheckServiceTestCase(unittest.TestCase):
 
         # Check for another staff in the same department
         result = WFHCheckService.check_department_count(self.staff1.staff_id, date)
-        self.assertEqual(result, "1")
+        self.assertEqual(result, 'Unable to apply due to max limit')
 
     def test_check_department_count_at_threshold(self):
         # Schedule 50% staff to WFH
@@ -126,7 +126,7 @@ class WFHCheckServiceTestCase(unittest.TestCase):
         db.session.commit()
 
         result = WFHCheckService.check_department_count(self.staff2.staff_id, date)
-        self.assertEqual(result, "2")
+        self.assertEqual(result, 'Success')
 
     def test_check_department_count_no_staff_in_dept(self):
         # Remove staff from department
@@ -142,6 +142,13 @@ class WFHCheckServiceTestCase(unittest.TestCase):
                 self.staff1.staff_id, datetime.now().date()
             )
         self.assertEqual(str(context.exception), "No staff found with id: 1")
+
+    def test_check_department_count_2_staff_in_dept(self):
+        # Remove staff from department
+     
+        count = WFHCheckService.department_count(self.dept1)
+        self.assertEqual(count, 2)
+
 
 
 if __name__ == "__main__":
