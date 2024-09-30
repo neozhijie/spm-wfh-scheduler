@@ -52,7 +52,7 @@ class WFHScheduleService:
         return schedules
     
     @staticmethod
-    def update_schedule(request_id):
+    def update_schedule(request_id, status):
         # Fetch the existing schedules based on the request_id
         schedules = WFHSchedule.query.filter_by(request_id=request_id).all()
 
@@ -61,7 +61,10 @@ class WFHScheduleService:
 
 
         for schedule in schedules:
-            schedule.status = "APPROVED"
+            if status == "APPROVED":
+                schedule.status = "APPROVED"
+            elif status == "REJECTED":
+                schedule.status = "REJECTED"
 
         # Commit the updated schedules to the database
         db.session.commit()

@@ -132,7 +132,7 @@ def update_wfh_request():
         print("Calling WFHRequestService.update_request()")
         response = WFHRequestService.update_request(request_id, new_request_status, two_months_ago, reason)
         if response == True:
-            response2 = WFHScheduleService.update_schedule(request_id)
+            response2 = WFHScheduleService.update_schedule(request_id, new_request_status)
 
             if response2 == True:
                 print("Successfully updated")

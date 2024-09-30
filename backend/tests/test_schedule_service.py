@@ -231,11 +231,34 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
         db.session.commit()
 
         updated_schedule = WFHScheduleService.update_schedule(
-            request_id=1
+            request_id=1, status="APPROVED"
         )
 
         self.assertEqual(updated_schedule, True)
         self.assertEqual(existing_schedule.status, "APPROVED")
+    
+    def test_update_schedule_rejected(self):
+        today = datetime.now().date()
+        start_date = today + timedelta(days=5)
+        existing_schedule = WFHSchedule(
+            request_id= 1,
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            date= start_date,
+            duration="FULL_DAY",
+            dept=self.staff3.dept,
+            position=self.staff3.position,
+        )
+        db.session.add(existing_schedule)
+        db.session.commit()
+
+        updated_schedule = WFHScheduleService.update_schedule(
+            request_id=1, status="REJECTED"
+        )
+
+        self.assertEqual(updated_schedule, True)
+        self.assertEqual(existing_schedule.status, "REJECTED")
+        
 
     def test_update_schedule_recurring(self):
         today = datetime.now().date()
@@ -273,7 +296,7 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
         db.session.commit()
 
         updated_schedule = WFHScheduleService.update_schedule(
-            request_id=1)
+            request_id=1, status="APPROVED")
 
         self.assertEqual(updated_schedule, True)
         self.assertEqual(existing_schedule1.status, "APPROVED")
@@ -282,10 +305,10 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
 
     def test_update_schedule_schedule_not_exist(self):
         with self.assertRaises(ValueError) as context:
-            WFHScheduleService.update_schedule(request_id=1)
+            WFHScheduleService.update_schedule(request_id=1, status="APPROVED")
     
         # Check if the error message is as expected
         self.assertEqual(str(context.exception), "No schedules found for request_id: 1")
-        
+
 if __name__ == "__main__":
     unittest.main()
