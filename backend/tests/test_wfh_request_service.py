@@ -171,7 +171,6 @@ class WFHRequestServiceTestCase(unittest.TestCase):
         )
         self.assertTrue(response)
         updated_request = WFHRequest.query.get(wfh_request.request_id)
-        print(updated_request)
         self.assertEqual(updated_request.status, "APPROVED")
 
     def test_update_request_invalid_date(self):
