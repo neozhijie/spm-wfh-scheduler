@@ -141,13 +141,26 @@ class WFHControllerTestCase(unittest.TestCase):
         db.session.add(wfh_request)
         db.session.commit()
 
+        wfh_schedule = WFHSchedule(
+            request_id = wfh_request.request_id,
+            staff_id=self.staff.staff_id,
+            manager_id=self.manager.staff_id,
+            date= wfh_request.start_date,
+            duration = "FULL_DAY",
+            status = "PENDING",
+            dept = self.staff.dept,
+            position = self.staff.position
+        )
+        db.session.add(wfh_schedule)
+        db.session.commit()
+
         data = {
             "request_id": wfh_request.request_id,
             "request_status": "APPROVED",
             "reason": "",
         }
         response = self.client.patch(
-            "/api/pending-requests",
+            "/api/update-request",
             data=json.dumps(data),
             content_type="application/json",
         )
@@ -166,13 +179,26 @@ class WFHControllerTestCase(unittest.TestCase):
         db.session.add(wfh_request)
         db.session.commit()
 
+        wfh_schedule = WFHSchedule(
+            request_id = wfh_request.request_id,
+            staff_id=self.staff.staff_id,
+            manager_id=self.manager.staff_id,
+            date= wfh_request.start_date,
+            duration = "FULL_DAY",
+            status = "PENDING",
+            dept = self.staff.dept,
+            position = self.staff.position
+        )
+        db.session.add(wfh_schedule)
+        db.session.commit()
+
         data = {
             "request_id": wfh_request.request_id,
             "request_status": "REJECTED",
             "reason": "Insufficient staffing available.",
         }
         response = self.client.patch(
-            "/api/pending-requests",
+            "/api/update-request",
             data=json.dumps(data),
             content_type="application/json",
         )

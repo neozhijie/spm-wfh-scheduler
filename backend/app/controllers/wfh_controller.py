@@ -113,7 +113,7 @@ def get_pending_requests(manager_id):
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
 
 
-@wfh_bp.route('/pending-requests', methods=['PATCH'])
+@wfh_bp.route('/update-request', methods=['PATCH'])
 def update_wfh_request():
     print(f"\n===== UPDATE REQUESTS =====")
     data = request.get_json()
@@ -132,9 +132,16 @@ def update_wfh_request():
         print("Calling WFHRequestService.update_request()")
         response = WFHRequestService.update_request(request_id, new_request_status, two_months_ago, reason)
         if response == True:
-            print("Successfully updated")
-            print("===== UPDATE PENDING REQUESTS COMPLETED =====\n")
-            return jsonify(f"Successfully updated request {request_id} as {new_request_status}"), 200
+            response2 = WFHScheduleService.update_schedule(request_id)
+
+            if response2 == True:
+                print("Successfully updated")
+                print("===== UPDATE PENDING REQUESTS COMPLETED =====\n")
+                return jsonify(f"Successfully updated request {request_id} as {new_request_status}"), 200
+            
+            else:
+                return jsonify(response), 404
+            
         else:
             return jsonify(response), 404
     
