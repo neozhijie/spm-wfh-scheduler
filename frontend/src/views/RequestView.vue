@@ -64,8 +64,9 @@
                       </tr>
                     </tbody>
                   </table>
-                  <label for="reason">Reason for rejection:</label>
-                  <p><input type="text" id="reason" v-model="reason"></p>
+                  <label for="rej_reason">Reason for rejection:</label>
+                  <p><input type="text" id="rej_reason" v-model="rej_reason"></p>
+                  <p v-if="errorMessage" style="color: red;">{{ errorMessage }}</p>
 
                   <button type="button" @click="submitRejection" class = "form-button">Submit</button>
                   <button type="button" @click="closeForm" class = "form-button">Cancel</button>
@@ -106,6 +107,7 @@ const fetchPendingRequests = async () => {
     }
   } catch (error) {
     console.error('Error fetching pending requests:', error)
+    alert('Error fetching pending requests')
   }
 }
 
@@ -126,6 +128,7 @@ const getNameById = async (staffId) => {
     return name
   } catch (error) {
     console.error('Error fetching staff name:', error)
+    alert('Error fetching staff name')
     return 'Unknown'
   }
 }
@@ -138,8 +141,9 @@ onMounted(() => {
 })
 
 const showForm = ref(false);
-const reason = ref('');
+const rej_reason = ref('');
 const selectedRequest = ref(null);
+const errorMessage = ref('');
 
 const openRejectForm = (request) => {
   // Log the request to inspect the data passed
@@ -148,6 +152,7 @@ const openRejectForm = (request) => {
   // Check if the request object and date fields are defined
   if (!request || !request.request_date || !request.start_date) {
     console.error('Invalid request data:', request);
+
     return;
   }
 
@@ -161,7 +166,15 @@ const closeForm = () => {
   };
 
 const submitRejection = () => {
-  console.log(`Rejection reason for ${selectedRequest.value.request_id}: ${reason.value}`);
+  if (!rej_reason.value.trim()) {
+    errorMessage.value = 'Please provide a reason for rejection.';
+    return;  // Prevent submission
+  }
+
+  // Clear the error message if there is valid input
+  errorMessage.value = '';
+
+  console.log(`Rejection reason for ${selectedRequest.value.request_id}: ${rej_reason.value}`);
   closeForm();
   };
 
@@ -238,6 +251,11 @@ button:hover {
   border-radius: 8px;
   z-index: 100;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
 }
 
 .form-button {
@@ -245,7 +263,7 @@ button:hover {
   margin: 2rem;
 }
 
-#reason {
+#rej_reason {
   width: 80%;
   height: 40%;
 }
