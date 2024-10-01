@@ -112,12 +112,14 @@ const fetchPendingRequests = async () => {
     // Fetch names for all staff IDs
     for (const request of pendingRequests.value) {
       if (!staffNames.value[request.staff_id]) {
-        getNameById(request.staff_id)
+        await getNameById(request.staff_id)
       }
     }
   } catch (error) {
     console.error('Error fetching pending requests:', error)
     alert('Error fetching pending requests')
+  }finally{
+    isLoaded.value = true
   }
 }
 
@@ -134,7 +136,7 @@ const getNameById = async (staffId) => {
     const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/staff/${staffId}`)
     const name = `${response.data.staff_fname} ${response.data.staff_lname}`
     staffNames.value[staffId] = name
-    isLoaded.value = true
+
     return name
   } catch (error) {
     console.error('Error fetching staff name:', error)
