@@ -141,6 +141,7 @@
 </template>
 
 <script>
+import axios from 'axios'
 import Navbar from '@/components/Navbar.vue'
 export default {
   components: {
@@ -235,16 +236,40 @@ export default {
         }
       }
     },
-    submitForm() {
-      if (this.isFormValid) {
-        console.log('Form submitted:', {
-          startDate: this.startDate,
-          endDate: this.endDate,
-          isRecurring: this.isRecurring,
-          dayType: this.dayType,
-          reason: this.reason
-        });
-        // TODO: Implement your form submission logic here
+    async submitForm() {
+      const userData = JSON.parse(localStorage.getItem('user'))
+      // check valid
+      if (!this.isFormValid) { return; }
+
+      // get form data
+      const formData = {
+        startDate: this.startDate,
+        endDate: this.endDate,
+        isRecurring: this.isRecurring ? this.endDate : null, // only if recur
+        dayType: this.dayType,
+        reason: this.reason
+      }
+
+      try {
+        const response = await axios.post(
+          `${import.meta.env.VITE_API_URL}/api/submit-request/${userData.staff_id}`,
+          formData
+        )
+
+        console.log('Form submitted successfully:', response.data);
+        alert('Request submitted successfully!')
+
+        // reset form
+        this.startDate = '';
+        this.endDate = '';
+        this.isRecurring = false;
+        this.reason = '';
+        this.dayType = '';
+        this.startDateError = '';
+        this.endDateError = '';
+
+      } catch (error) {
+        console.error('Error submitting application form:', error);
       }
     }
   }
