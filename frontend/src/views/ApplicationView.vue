@@ -141,8 +141,11 @@
 </template>
 
 <script>
-import axios from 'axios'
+import axios from 'axios';
 import Navbar from '@/components/Navbar.vue'
+import { ref } from 'vue';
+const user = ref({});
+const userData = JSON.parse(localStorage.getItem('user'));
 export default {
   components: {
     Navbar
@@ -237,41 +240,49 @@ export default {
       }
     },
     async submitForm() {
-      const userData = JSON.parse(localStorage.getItem('user'))
-      // check valid
-      if (!this.isFormValid) { return; }
-
-      // get form data
-      const formData = {
-        startDate: this.startDate,
-        endDate: this.endDate,
-        isRecurring: this.isRecurring ? this.endDate : null, // only if recur
-        dayType: this.dayType,
-        reason: this.reason
-      }
+    if (this.isFormValid) {
+      // Prepare the data to send
+      const requestData = {
+        staff_id: userData.staff_id,
+        manager_id: userData.reporting_manager,
+        reason_for_applying: this.reason,
+        date: this.startDate,
+        duration: this.dayType,
+        dept: userData.dept,
+        position: userData.position,
+        end_date: this.isRecurring ? this.endDate : null,
+      };
 
       try {
-        const response = await axios.post(
-          `${import.meta.env.VITE_API_URL}/api/submit-request/${userData.staff_id}`,
-          formData
-        )
+        // Make the POST request
+        const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/request`, requestData);
 
-        console.log('Form submitted successfully:', response.data);
-        alert('Request submitted successfully!')
-
-        // reset form
-        this.startDate = '';
-        this.endDate = '';
-        this.isRecurring = false;
-        this.reason = '';
-        this.dayType = '';
-        this.startDateError = '';
-        this.endDateError = '';
+        // Success message
+        console.log('Request successful:', response.data);
+        alert('WFH request submitted successfully.');
+        // Reset the form after submission
+        this.resetForm();
 
       } catch (error) {
-        console.error('Error submitting application form:', error);
+        // Handle errors (e.g., show error messages)
+        console.error('Error submitting WFH request:', error.response.data);
+        alert(`Error: ${error.response.data.message}`);
       }
+    } else {
+      // Shouldn't reach here since the button is disabled when form is invalid
+      alert('Please fill out the form correctly.');
     }
+  },
+  resetForm() {
+    this.startDate = '';
+    this.endDate = '';
+    this.isRecurring = false;
+    this.reason = '';
+    this.dayType = '';
+    this.startDateError = '';
+    this.endDateError = '';
+    this.showRecurringWarning = false;
+  },
   }
 }
 </script>
