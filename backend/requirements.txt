@@ -1,6 +1,7 @@
-flask
-flask-cors
-flask-sqlalchemy
-python-dotenv
-mysql-connector-python
-gunicorn
+Flask==3.0.1
+Flask-Cors==4.0.0
+Flask-SQLAlchemy==3.1.1
+python-dotenv==1.0.1
+mysql-connector-python==8.3.0
+SQLAlchemy==2.0.25
+gunicorn==23.0.0
