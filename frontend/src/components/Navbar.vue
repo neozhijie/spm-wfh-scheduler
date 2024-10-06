@@ -34,21 +34,40 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
 const user = ref({});
 
-onMounted(() => {
+const updateUserFromStorage = () => {
   const storedUser = localStorage.getItem('user');
   if (storedUser) {
     user.value = JSON.parse(storedUser);
+  } else {
+    user.value = {};
   }
+};
+
+onMounted(() => {
+  updateUserFromStorage();
+
+  // Listen for storage events (in case user logs in in another tab)
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'user') {
+      updateUserFromStorage();
+    }
+  });
 });
+
+// Watch for route changes
+watch(() => router.currentRoute.value, () => {
+  updateUserFromStorage();
+}, { immediate: true });
 
 const logout = () => {
   localStorage.removeItem('user');
+  user.value = {};
   router.push('/');
 };
 </script>

@@ -143,9 +143,6 @@
 <script>
 import axios from 'axios';
 import Navbar from '@/components/Navbar.vue'
-import { ref } from 'vue';
-const user = ref({});
-const userData = JSON.parse(localStorage.getItem('user'));
 export default {
   components: {
     Navbar
@@ -242,6 +239,7 @@ export default {
     async submitForm() {
     if (this.isFormValid) {
       // Prepare the data to send
+      const userData = JSON.parse(localStorage.getItem('user'));
       const requestData = {
         staff_id: userData.staff_id,
         manager_id: userData.reporting_manager,

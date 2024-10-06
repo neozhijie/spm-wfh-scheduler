@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from app.services.wfh_request_service import WFHRequestService
 from app.services.wfh_schedule_service import WFHScheduleService
 from app.services.wfh_check_service import WFHCheckService
+from app.models.wfh_request import WFHRequest
 from datetime import datetime, timedelta, date
 from app import db
 
@@ -129,8 +130,43 @@ def update_wfh_request():
     print(f"Updating request for request_id: {request_id}")
     
     try:
+        # Fetch the request
+        request_obj = WFHRequest.query.get(request_id)
+        if not request_obj:
+            return jsonify({"message": "Request does not exist"}), 404
+
+        if new_request_status == 'APPROVED':
+            staff_id = request_obj.staff_id
+            start_date = request_obj.start_date
+            end_date = request_obj.end_date
+
+            dates_to_check = []
+
+            if end_date:
+                # Recurring request
+                current_date_iter = start_date
+                while current_date_iter <= end_date:
+                    if current_date_iter >= current_date:
+                        dates_to_check.append(current_date_iter)
+                    current_date_iter += timedelta(days=7)
+            else:
+                # Single date request
+                if start_date >= current_date:
+                    dates_to_check.append(start_date)
+            violated_dates = []
+            # Check WFH policy for each date
+            for date_to_check in dates_to_check:
+                result = WFHCheckService.check_department_count(staff_id, date_to_check)
+                if result != 'Success':
+                    violated_dates.append(date_to_check)
+            
+            if len(violated_dates) > 0:
+                formatted_dates = ",".join([d.strftime("%d-%m-%Y") for d in violated_dates])
+                return jsonify({"message": f"Cannot approve request due to policy violation on date(s) {formatted_dates}"}), 400
+
         print("Calling WFHRequestService.update_request()")
-        response = WFHRequestService.update_request(request_id, new_request_status, two_months_ago, reason)
+        response = WFHRequestService.update_request(
+            request_id, new_request_status, two_months_ago, reason)
         if response == True:
             response2 = WFHScheduleService.update_schedule(request_id, new_request_status)
 
@@ -138,13 +174,13 @@ def update_wfh_request():
                 print("Successfully updated")
                 print("===== UPDATE PENDING REQUESTS COMPLETED =====\n")
                 return jsonify(f"Successfully updated request {request_id} as {new_request_status}"), 200
-            
+                
             else:
-                return jsonify(response), 404
-            
+                return jsonify({"message": response2}), 404
+                
         else:
-            return jsonify(response), 404
-    
+            return jsonify({"message": response}), 404
+
     except Exception as e:
         db.session.rollback()
         print("\n===== ERROR OCCURRED =====")

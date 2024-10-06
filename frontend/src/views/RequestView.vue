@@ -104,6 +104,7 @@ const isLoaded = ref(false)
 
 const fetchPendingRequests = async () => {
   try {
+    const userData = JSON.parse(localStorage.getItem('user'));
     const response = await axios.get(
       `${import.meta.env.VITE_API_URL}/api/pending-requests/${userData.staff_id}`
     )
@@ -191,9 +192,15 @@ const approveRequest = async (request) => {
     await fetchPendingRequests();
   } catch (error) {
     console.error('Error approving request:', error);
-    alert('Error approving request');
+    // Display the error message from the server
+    if (error.response && error.response.data && error.response.data.message) {
+      alert(`Error approving request: ${error.response.data.message}`);
+    } else {
+      alert('Error approving request');
+    }
   }
 };
+
 
 const rejectRequest = async () => {
   if (!rej_reason.value.trim()) {
