@@ -89,6 +89,7 @@ class WFHCheckServiceTestCase(unittest.TestCase):
             manager_id=0,
             date=date,
             duration="FULL_DAY",
+            status="APPROVED",
             dept=self.staff1.dept,
             position=self.staff1.position,
         )
@@ -98,6 +99,7 @@ class WFHCheckServiceTestCase(unittest.TestCase):
             manager_id=0,
             date=date,
             duration="FULL_DAY",
+            status="APPROVED",
             dept=self.staff2.dept,
             position=self.staff2.position,
         )
