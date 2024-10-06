@@ -182,8 +182,14 @@ const calendarOptions = computed(() => ({
     }
     return null;
   },
-  eventClassNames: 'calendar-event'
-}));
+  eventClassNames: 'calendar-event',
+  slotMinTime: '09:00:00', // Start time for time grid
+  slotMaxTime: '19:00:00', // End time for time grid
+  businessHours: {
+    startTime: '09:00', // Start time for business hours
+    endTime: '18:00', // End time for business hours
+    daysOfWeek: [1, 2, 3, 4, 5], // Monday - Friday
+}}));
 
 async function handleDateClick(info) {
   const clickedDate = new Date(info.dateStr);
