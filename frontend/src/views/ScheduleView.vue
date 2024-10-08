@@ -21,15 +21,16 @@
 </template>
 
 <script setup>
-import { createApp } from 'vue';
 import { ref, onMounted, computed } from 'vue';
 import Navbar from '@/components/Navbar.vue'
 import FullCalendar from '@fullcalendar/vue3';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import axios from 'axios';
 
 const user = ref({});
+const userData = JSON.parse(localStorage.getItem('user'))
 const selectedDate = ref('');
 const events = ref([]);
 const rightContent = ref('');
@@ -37,13 +38,7 @@ const isRightContainerVisible = ref(false);
 
 // User data from local storage
 onMounted(() => {
-  const storedUser = localStorage.getItem('user');
-  if (storedUser) {
-    user.value = JSON.parse(storedUser);
-  }
-
-  // Fetch staff counts for the current month
-  fetchStaffCountsForMonth(computeMinDate.value, computeMaxDate.value);
+  fetchStaffCounts(computeMinDate.value, computeMaxDate.value);
 });
 
 // Computed properties for valid date range
@@ -59,52 +54,51 @@ const computeMaxDate = computed(() => {
   return date;
 });
 
-async function fetchStaffCount(date) {
-  // Replace this with your actual API call to fetch staff count
-  // const response = await fetch(`/api/staff-counts/${date}`);
-  // const data = await response.json();
-  // return data.count;
-  return Math.floor(Math.random() * 20); //temporary placeholder
-}
-
-
-async function fetchStaffCountsForMonth(start, end) {
+async function fetchStaffCounts(start, end) {
   const currentDate = new Date(start);
   const newEvents = [];
 
   while (currentDate <= end) {
     const dateStr = currentDate.toISOString().split('T')[0];
-    const count = await fetchStaffCount(dateStr);
     
-    // Calculate percentage
-    const percentage = ((count / getTotalStaffs()) * 100).toFixed(2);
+    try {
+      // Replace this URL with your actual API endpoint
 
-    // Create an event object with staff count
-    newEvents.push({
-      title: `${count} / ${getTotalStaffs()} (${percentage}%)`,
-      start: dateStr,
-      end: dateStr,
-      allDay: true,
-      extendedProps: {
-        staffCount: count,
-        totalStaffs: getTotalStaffs(),
-        percentage: percentage
-      }
-    });
+      const userData = JSON.parse(localStorage.getItem('user'));
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/manager-schedule-summary/${userData.staff_id}`)
+      console.log(userData.staff_id)
+      // console.log(userData)
+      
+      const count = response.data.wfh_count;
+      const totalStaffs = response.data.total_staff;
+
+      // Calculate percentage
+      const percentage = ((count / totalStaffs) * 100).toFixed(2);
+
+      // Create an event object with staff count
+      newEvents.push({
+        title: `${count} / ${totalStaffs} (${percentage}%)`,
+        start: dateStr,
+        end: dateStr,
+        allDay: true,
+        extendedProps: {
+          staffCount: count,
+          totalStaffs: totalStaffs,
+          percentage: percentage,
+        }
+      });
+    } catch (error) {
+      console.error(`Failed to fetch staff count for ${dateStr}`, error);
+    }
 
     currentDate.setDate(currentDate.getDate() + 1);
   }
-  
+
   events.value = newEvents;
-  Vue.nextTick(() => {
+  await Vue.nextTick(() => {
     // Force re-render when events change
     calendarRef.value?.refetchEvents();
   });
-}
-
-function getTotalStaffs() {
-  // Replace this with your actual API call to fetch total staffs
-  return 20; // Temporary placeholder
 }
 
 // FullCalendar options
@@ -213,8 +207,6 @@ async function handleDateClick(info) {
   }
 }
 
-// Make sure to declare all functions used in the template
-defineExpose({ fetchStaffCountsForMonth, handleDateClick });
 </script>
 
 <style scoped>
