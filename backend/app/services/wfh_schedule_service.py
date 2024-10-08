@@ -136,9 +136,11 @@ class WFHScheduleService:
             staff_status[staff.staff_id] = {
                 'staff_id': staff.staff_id,
                 'name': f"{staff.staff_fname} {staff.staff_lname}",
+                'position': staff.position,
                 'status_am': 'OFFICE',
                 'status_pm': 'OFFICE'
             }
+        print(staff_status)
 
         schedules = WFHSchedule.query.filter(
             WFHSchedule.staff_id.in_(staff_ids),
