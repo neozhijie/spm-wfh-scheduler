@@ -234,5 +234,111 @@ class WFHControllerTestCase(unittest.TestCase):
         self.assertEqual(response.get_data(as_text=True), "done")
 
 
+##For manager schedule related endpoints
+    def test_manager_schedule_summary_no_subordinates(self):
+        manager_id = 99  # Non-existent manager ID
+        response = self.client.get(f'/api/manager-schedule-summary/{manager_id}')
+        data = response.get_json()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data, {'dates': []})
+
+    def test_manager_schedule_summary_no_schedules(self):
+        manager_id = self.manager.staff_id  # Manager ID = 2
+        response = self.client.get(f'/api/manager-schedule-summary/{manager_id}')
+        data = response.get_json()
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('dates', data)
+        self.assertTrue(len(data['dates']) > 0)
+        for date_data in data['dates']:
+            self.assertEqual(date_data['total_staff'], 1)
+
+    def test_manager_schedule_summary_with_schedules(self):
+        manager_id = self.manager.staff_id
+        today = datetime.now().date()
+        schedule = WFHSchedule(
+            request_id=1,
+            staff_id=self.staff.staff_id,
+            manager_id=manager_id,
+            date=today,
+            duration='FULL_DAY',
+            status='APPROVED',
+            dept=self.staff.dept,
+            position=self.staff.position,
+        )
+        db.session.add(schedule)
+        db.session.commit()
+        response = self.client.get(f'/api/manager-schedule-summary/{manager_id}')
+        data = response.get_json()
+        self.assertEqual(response.status_code, 200)
+        date_str = today.isoformat()
+        date_data = next((item for item in data['dates'] if item['date'] == date_str), None)
+        self.assertIsNotNone(date_data)
+        self.assertEqual(date_data['wfh_count_am'], 1)
+        self.assertEqual(date_data['wfh_count_pm'], 1)
+        self.assertEqual(date_data['office_count_am'], 0)
+        self.assertEqual(date_data['office_count_pm'], 0)
+
+    def test_manager_schedule_detail_no_subordinates(self):
+        manager_id = 99  # Non-existent manager ID
+        date_str = datetime.now().date().strftime('%Y-%m-%d')
+        response = self.client.get(f'/api/manager-schedule-detail/{manager_id}/{date_str}')
+        data = response.get_json()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data, {'date': date_str, 'staff': []})
+
+    def test_manager_schedule_detail_no_schedules(self):
+        manager_id = self.manager.staff_id
+        date_str = datetime.now().date().strftime('%Y-%m-%d')
+        response = self.client.get(f'/api/manager-schedule-detail/{manager_id}/{date_str}')
+        data = response.get_json()
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('staff', data)
+        self.assertEqual(len(data['staff']), 1)
+        staff_data = data['staff'][0]
+        self.assertEqual(staff_data['staff_id'], self.staff.staff_id)
+        self.assertEqual(staff_data['status_am'], 'OFFICE')
+        self.assertEqual(staff_data['status_pm'], 'OFFICE')
+
+    def test_manager_schedule_detail_with_schedules(self):
+        manager_id = self.manager.staff_id
+        date = datetime.now().date()
+        date_str = date.strftime('%Y-%m-%d')
+        schedule = WFHSchedule(
+            request_id=1,
+            staff_id=self.staff.staff_id,
+            manager_id=manager_id,
+            date=date,
+            duration='HALF_DAY_PM',
+            status='APPROVED',
+            dept=self.staff.dept,
+            position=self.staff.position,
+        )
+        db.session.add(schedule)
+        db.session.commit()
+        response = self.client.get(f'/api/manager-schedule-detail/{manager_id}/{date_str}')
+        data = response.get_json()
+        self.assertEqual(response.status_code, 200)
+        staff_data = data['staff'][0]
+        self.assertEqual(staff_data['status_am'], 'OFFICE')
+        self.assertEqual(staff_data['status_pm'], 'WFH')
+
+    def test_manager_schedule_detail_invalid_date_format(self):
+        manager_id = self.manager.staff_id
+        invalid_date = 'invalid-date'
+        response = self.client.get(f'/api/manager-schedule-detail/{manager_id}/{invalid_date}')
+        self.assertEqual(response.status_code, 500)
+        data = response.get_json()
+        self.assertIn('message', data)
+        self.assertIn('An error occurred', data['message'])
+
+    def test_manager_schedule_summary_invalid_date_params(self):
+        manager_id = self.manager.staff_id
+        response = self.client.get(f'/api/manager-schedule-summary/{manager_id}?start_date=invalid&end_date=alsoinvalid')
+        self.assertEqual(response.status_code, 500)
+        data = response.get_json()
+        self.assertIn('message', data)
+        self.assertIn('An error occurred', data['message'])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -224,3 +224,38 @@ def check_wfh_count():
     except Exception as e:
         db.session.rollback()  # Rollback the session in case of an error
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+
+
+@wfh_bp.route('/manager-schedule-summary/<int:manager_id>', methods=['GET'])
+def manager_schedule_summary(manager_id):
+    try:
+        # Get start_date and end_date from query params, else use default range
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        today = datetime.now().date()
+        if start_date:
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        else:
+            start_date = today - timedelta(days=60)  # 2 months before today
+
+        if end_date:
+            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        else:
+            end_date = today + timedelta(days=90)  # 3 months after today
+
+        data = WFHScheduleService.get_manager_schedule_summary(manager_id, start_date, end_date)
+        return jsonify(data), 200
+
+    except Exception as e:
+        print(f"Error in manager_schedule_summary: {str(e)}")
+        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+
+@wfh_bp.route('/manager-schedule-detail/<int:manager_id>/<date>', methods=['GET'])
+def manager_schedule_detail(manager_id, date):
+    try:
+        date_obj = datetime.strptime(date, '%Y-%m-%d').date()
+        data = WFHScheduleService.get_manager_schedule_detail(manager_id, date_obj)
+        return jsonify(data), 200
+    except Exception as e:
+        print(f"Error in manager_schedule_detail: {str(e)}")
+        return jsonify({"message": f"An error occurred: {str(e)}"}), 500

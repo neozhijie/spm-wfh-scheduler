@@ -310,5 +310,161 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
         # Check if the error message is as expected
         self.assertEqual(str(context.exception), "No schedules found for request_id: 1")
 
+    def test_get_manager_schedule_summary_no_subordinates(self):
+        # Manager with no subordinates
+        manager_id = 99  # Non-existent manager ID
+        start_date = datetime.now().date()
+        end_date = start_date + timedelta(days=5)
+        result = WFHScheduleService.get_manager_schedule_summary(manager_id, start_date, end_date)
+        self.assertEqual(result, {'dates': []})
+
+    def test_get_manager_schedule_summary_no_schedules(self):
+        # Manager with subordinates but no schedules in the given date range
+        manager_id = self.staff2.staff_id  # Manager ID = 2
+        start_date = datetime.now().date()
+        end_date = start_date + timedelta(days=5)
+        result = WFHScheduleService.get_manager_schedule_summary(manager_id, start_date, end_date)
+        self.assertEqual(len(result['dates']), 6)  # Including start_date and end_date
+        for date_data in result['dates']:
+            self.assertEqual(date_data['total_staff'], 1)  # Only staff3 is subordinate
+            self.assertEqual(date_data['wfh_count_am'], 0)
+            self.assertEqual(date_data['wfh_count_pm'], 0)
+            self.assertEqual(date_data['office_count_am'], 1)
+            self.assertEqual(date_data['office_count_pm'], 1)
+
+    def test_get_manager_schedule_summary_with_schedules(self):
+        # Create approved schedules for staff3
+        manager_id = self.staff2.staff_id
+        start_date = datetime.now().date()
+        end_date = start_date + timedelta(days=5)
+        # Create schedules with different durations
+        schedule1 = WFHSchedule(
+            request_id=1,
+            staff_id=self.staff3.staff_id,
+            manager_id=manager_id,
+            date=start_date,
+            duration='FULL_DAY',
+            status='APPROVED',
+            dept=self.staff3.dept,
+            position=self.staff3.position,
+        )
+        schedule2 = WFHSchedule(
+            request_id=2,
+            staff_id=self.staff3.staff_id,
+            manager_id=manager_id,
+            date=start_date + timedelta(days=2),
+            duration='HALF_DAY_AM',
+            status='APPROVED',
+            dept=self.staff3.dept,
+            position=self.staff3.position,
+        )
+        schedule3 = WFHSchedule(
+            request_id=3,
+            staff_id=self.staff3.staff_id,
+            manager_id=manager_id,
+            date=start_date + timedelta(days=4),
+            duration='HALF_DAY_PM',
+            status='APPROVED',
+            dept=self.staff3.dept,
+            position=self.staff3.position,
+        )
+        db.session.add_all([schedule1, schedule2, schedule3])
+        db.session.commit()
+        result = WFHScheduleService.get_manager_schedule_summary(manager_id, start_date, end_date)
+        self.assertEqual(len(result['dates']), 6)
+        for date_data in result['dates']:
+            date = datetime.strptime(date_data['date'], '%Y-%m-%d').date()
+            if date == start_date:
+                self.assertEqual(date_data['wfh_count_am'], 1)
+                self.assertEqual(date_data['wfh_count_pm'], 1)
+            elif date == start_date + timedelta(days=2):
+                self.assertEqual(date_data['wfh_count_am'], 1)
+                self.assertEqual(date_data['wfh_count_pm'], 0)
+            elif date == start_date + timedelta(days=4):
+                self.assertEqual(date_data['wfh_count_am'], 0)
+                self.assertEqual(date_data['wfh_count_pm'], 1)
+            else:
+                self.assertEqual(date_data['wfh_count_am'], 0)
+                self.assertEqual(date_data['wfh_count_pm'], 0)
+
+    def test_get_manager_schedule_detail_no_subordinates(self):
+        manager_id = 99  # Non-existent manager ID
+        date = datetime.now().date()
+        result = WFHScheduleService.get_manager_schedule_detail(manager_id, date)
+        self.assertEqual(result, {'date': date.isoformat(), 'staff': []})
+
+    def test_get_manager_schedule_detail_no_schedules(self):
+        manager_id = self.staff2.staff_id
+        date = datetime.now().date()
+        result = WFHScheduleService.get_manager_schedule_detail(manager_id, date)
+        self.assertEqual(len(result['staff']), 1)
+        staff_data = result['staff'][0]
+        self.assertEqual(staff_data['staff_id'], self.staff3.staff_id)
+        self.assertEqual(staff_data['status_am'], 'OFFICE')
+        self.assertEqual(staff_data['status_pm'], 'OFFICE')
+
+    def test_get_manager_schedule_detail_with_schedules(self):
+        manager_id = self.staff2.staff_id
+        date = datetime.now().date()
+        # Create a schedule with 'FULL_DAY' duration
+        schedule = WFHSchedule(
+            request_id=1,
+            staff_id=self.staff3.staff_id,
+            manager_id=manager_id,
+            date=date,
+            duration='FULL_DAY',
+            status='APPROVED',
+            dept=self.staff3.dept,
+            position=self.staff3.position,
+        )
+        db.session.add(schedule)
+        db.session.commit()
+        result = WFHScheduleService.get_manager_schedule_detail(manager_id, date)
+        staff_data = result['staff'][0]
+        self.assertEqual(staff_data['status_am'], 'WFH')
+        self.assertEqual(staff_data['status_pm'], 'WFH')
+
+    def test_get_manager_schedule_detail_with_half_day_am(self):
+        manager_id = self.staff2.staff_id
+        date = datetime.now().date()
+        # Create a schedule with 'HALF_DAY_AM' duration
+        schedule = WFHSchedule(
+            request_id=2,
+            staff_id=self.staff3.staff_id,
+            manager_id=manager_id,
+            date=date,
+            duration='HALF_DAY_AM',
+            status='APPROVED',
+            dept=self.staff3.dept,
+            position=self.staff3.position,
+        )
+        db.session.add(schedule)
+        db.session.commit()
+        result = WFHScheduleService.get_manager_schedule_detail(manager_id, date)
+        staff_data = result['staff'][0]
+        self.assertEqual(staff_data['status_am'], 'WFH')
+        self.assertEqual(staff_data['status_pm'], 'OFFICE')
+
+    def test_get_manager_schedule_detail_with_half_day_pm(self):
+        manager_id = self.staff2.staff_id
+        date = datetime.now().date()
+        # Create a schedule with 'HALF_DAY_PM' duration
+        schedule = WFHSchedule(
+            request_id=3,
+            staff_id=self.staff3.staff_id,
+            manager_id=manager_id,
+            date=date,
+            duration='HALF_DAY_PM',
+            status='APPROVED',
+            dept=self.staff3.dept,
+            position=self.staff3.position,
+        )
+        db.session.add(schedule)
+        db.session.commit()
+        result = WFHScheduleService.get_manager_schedule_detail(manager_id, date)
+        staff_data = result['staff'][0]
+        self.assertEqual(staff_data['status_am'], 'OFFICE')
+        self.assertEqual(staff_data['status_pm'], 'WFH')
+
 if __name__ == "__main__":
     unittest.main()
