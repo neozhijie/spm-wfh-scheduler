@@ -58,18 +58,36 @@ async function fetchEvents() {
   try {
     const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/`); // Replace with backend API endpoint
     const fetchedDates = response.data; 
+    console.log(response.data);
 
-    events.value = fetchedDates.map(date => {
-      return {
-        title: "WFH",
-        start: date,  
-      };
+    fetchedDates.forEach(dateObj => {
+      const eventDate = dateObj.date;
+      const wfhStatus = dateObj.wfh;
+
+      if (wfhStatus === 'AM') {
+        events.value.push({
+          title: 'WFH AM',
+          start: `${eventDate}T09:00:00`,
+          end: `${eventDate}T13:00:00`
+        });
+      } else if (wfhStatus === 'PM') {
+        events.value.push({
+          title: 'WFH PM',
+          start: `${eventDate}T14:00:00`,
+          end: `${eventDate}T18:00:00`
+        });
+      } else if (wfhStatus === 'FullDay') {
+        events.value.push({
+          title: 'WFH Full Day',
+          start: `${eventDate}T09:00:00`,
+          end: `${eventDate}T18:00:00`
+        });
+      }
     });
   } catch (error) {
     console.error('Error fetching events:', error);
   }
 }
-
 
 const calendarOptions = computed(() => ({
   plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
@@ -87,14 +105,18 @@ const calendarOptions = computed(() => ({
   },
   events: events.value,
   eventClassNames: 'calendar-event',
-  slotMinTime: '09:00:00', // Start time for time grid
-  slotMaxTime: '19:00:00', // End time for time grid
+  allDaySlot: false,
+  slotMinTime: '09:00:00',
+  slotMaxTime: '18:00:00',
   businessHours: {
-    startTime: '09:00', // Start time for business hours
-    endTime: '18:00', // End time for business hours
-    daysOfWeek: [1, 2, 3, 4, 5], // Monday - Friday
+    startTime: '09:00',
+    endTime: '18:00',
+    daysOfWeek: [1, 2, 3, 4, 5],
   },
+
 }));
+
+
 
 // Handle date click event
 async function handleDateClick(info) {
@@ -138,4 +160,6 @@ async function handleDateClick(info) {
   width: 100%;
   height: 100%;
 }
+
+
 </style>
