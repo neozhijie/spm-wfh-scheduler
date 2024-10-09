@@ -27,7 +27,7 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/teamschedule',
+      path: '/teamschedule-staff',
       name: 'teamschedule',
       component: TeamScheduleView,
       meta: { requiresAuth: true }
