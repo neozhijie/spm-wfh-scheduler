@@ -129,7 +129,7 @@ const calendarOptions = computed(() => ({
   eventClassNames:'calendar-event',
   allDaySlot: false,
   slotMinTime: '09:00:00',
-  slotMaxTime: '18:00:00',
+  slotMaxTime: '19:00:00',
   businessHours: {
     startTime: '09:00',
     endTime: '18:00',
