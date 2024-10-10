@@ -165,3 +165,47 @@ class WFHScheduleService:
             'date': date.isoformat(),
             'staff': staff_list_status
         }
+    
+    @staticmethod
+    def get_personal_schedule(staff_id, start_date, end_date):
+
+        date_list = []
+        current_date = start_date
+        while current_date <= end_date:
+            date_list.append(current_date)
+            current_date += timedelta(days=1)
+
+        dates_data = []
+
+        for d in date_list:
+            date_str = d.isoformat()
+            schedule = ''
+
+
+            # Get all approved schedules for the date
+            schedules = WFHSchedule.query.filter(
+                WFHSchedule.staff_id == staff_id,
+                WFHSchedule.date == d,
+                WFHSchedule.status.in_(['APPROVED', 'PENDING']) 
+            ).all()
+
+            for sched in schedules:
+                if sched.duration == 'FULL_DAY' and sched.status == 'APPROVED':
+                    schedule += 'FullDay'
+                elif sched.duration == 'HALF_DAY_AM' and sched.status == 'APPROVED':
+                    schedule += 'AM'
+                elif sched.duration == 'HALF_DAY_PM' and sched.status == 'APPROVED':
+                    schedule += 'PM'
+                elif sched.duration == 'FULL_DAY' and sched.status == 'PENDING':
+                    schedule += 'FullDayPending'
+                elif sched.duration == 'HALF_DAY_AM' and sched.status == 'PENDING':
+                    schedule += 'AMPending'
+                elif sched.duration == 'HALF_DAY_PM' and sched.status == 'PENDING':
+                    schedule += 'PMPending'
+
+
+            dates_data.append({
+                'date': date_str,
+                'schedule': schedule,
+            })
+        return {'dates': dates_data}

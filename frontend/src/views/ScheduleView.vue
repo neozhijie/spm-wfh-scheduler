@@ -56,13 +56,13 @@ const computeMaxDate = computed(() => {
 // Function to fetch events from the backend
 async function fetchEvents() {
   try {
-    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/`); // Replace with backend API endpoint
-    const fetchedDates = response.data; 
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/personal-schedule/${user.value.staff_id}`);
+    const fetchedDates = response.data.dates;
     console.log(response.data);
 
     fetchedDates.forEach(dateObj => {
       const eventDate = dateObj.date;
-      const wfhStatus = dateObj.wfh;
+      const wfhStatus = dateObj.schedule;
 
       if (wfhStatus === 'AM') {
         events.value.push({
@@ -82,13 +82,35 @@ async function fetchEvents() {
           start: `${eventDate}T09:00:00`,
           end: `${eventDate}T18:00:00`
         });
-      }
+      } else if (wfhStatus === 'FullDayPending') {
+        events.value.push({
+          title: 'Pending WFH Full Day',
+          start: `${eventDate}T09:00:00`,
+          end: `${eventDate}T18:00:00`,
+          backgroundColor: '#FFA500'
+        });
+      } else if (wfhStatus === 'AMPending') {
+        events.value.push({
+          title: 'Pending WFH AM',
+          start: `${eventDate}T09:00:00`,
+          end: `${eventDate}T13:00:00`,
+          backgroundColor: '#FFA500'
+        });
+      } else if (wfhStatus === 'PMPending') {
+        events.value.push({
+          title: 'Pending WFH PM',
+          start: `${eventDate}T14:00:00`,
+          end: `${eventDate}T18:00:00`,
+          backgroundColor: '#FFA500'
+        });
+      } 
     });
   } catch (error) {
     console.error('Error fetching events:', error);
   }
 }
 
+// Calendar options
 const calendarOptions = computed(() => ({
   plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
   initialView: 'dayGridMonth',
@@ -104,7 +126,7 @@ const calendarOptions = computed(() => ({
     end: computeMaxDate.value,
   },
   events: events.value,
-  eventClassNames: 'calendar-event',
+  eventClassNames:'calendar-event',
   allDaySlot: false,
   slotMinTime: '09:00:00',
   slotMaxTime: '18:00:00',
@@ -113,8 +135,8 @@ const calendarOptions = computed(() => ({
     endTime: '18:00',
     daysOfWeek: [1, 2, 3, 4, 5],
   },
-
 }));
+
 
 
 
@@ -134,6 +156,7 @@ async function handleDateClick(info) {
 </script>
 
 <style scoped>
+
 .dashboard-container {
   display: flex;
   flex-direction: column;
@@ -160,6 +183,8 @@ async function handleDateClick(info) {
   width: 100%;
   height: 100%;
 }
+
+
 
 
 </style>
