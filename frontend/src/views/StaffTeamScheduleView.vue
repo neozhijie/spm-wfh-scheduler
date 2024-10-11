@@ -328,7 +328,7 @@ async function handleDateClick(info) {
       alert('You cannot select a date beyond three months ahead.');
     } else {
       selectedDate.value = info.dateStr;
-      if (user.value.role === 3) {
+      if (user.value.role === 2) {
         await displayDateDetails(info.dateStr);
       }
     }
@@ -336,7 +336,7 @@ async function handleDateClick(info) {
 }
 
 async function handleEventClick(info) {
-  if (user.value.role === 3) {
+  if (user.value.role === 2) {
     const dateStr = getDateStr(info.event.start);
     const viewType = info.view.type;
     if (viewType === 'timeGridWeek' || viewType === 'timeGridDay') {
@@ -350,8 +350,8 @@ async function handleDatesSet(info) {
   if (info.view.type === 'timeGridDay') {
     const dateStr = getDateStr(info.start);
     selectedDate.value = dateStr;
-    if (user.value.role === 3) {
-      const detailData = await fetchManagerScheduleDetail(dateStr);
+    if (user.value.role === 2) {
+      const detailData = await fetchStaffScheduleDetail(dateStr);
       if (detailData) {
         let groupedData = {
           AM: {
@@ -417,7 +417,7 @@ async function handleDatesSet(info) {
 }
 
 async function displayDateDetails(dateStr) {
-  const detailData = await fetchManagerScheduleDetail(dateStr);
+  const detailData = await fetchStaffScheduleDetail(dateStr);
   if (detailData) {
     let groupedData = {
       AM: {
@@ -477,9 +477,9 @@ async function displayDateDetails(dateStr) {
   }
 }
 
-async function fetchManagerScheduleDetail(dateStr) {
+async function fetchStaffScheduleDetail(dateStr) {
   try {
-    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/manager-schedule-detail/${user.value.reporting_manager}/${dateStr}`);
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/staff-schedule-detail/${user.value.staff_id}/${dateStr}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching manager schedule detail:', error);
