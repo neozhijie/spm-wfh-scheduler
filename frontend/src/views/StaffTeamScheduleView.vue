@@ -8,6 +8,9 @@
             :options="calendarOptions"
           />
         </div>
+        <div v-if="isLoading" class="loading-overlay">
+            <div class="spinner"></div>
+        </div>
         <div class="right-container" :class="{'show': isRightContainerVisible }">
           <div v-if="selectedDateDetails" class="details-container">
             <div class="details-header">
@@ -76,6 +79,7 @@ const events = ref([]);
 const selectedDateDetails = ref(null);
 const isRightContainerVisible = ref(false);
 const isSmallScreen = ref(window.innerWidth < 768); // Reactive property for screen size
+const isLoading = ref(false);
 
 const handleResize = () => {
   isSmallScreen.value = window.innerWidth < 768;
@@ -85,8 +89,8 @@ onMounted(() => {
   const storedUser = localStorage.getItem('user');
   if (storedUser) {
     user.value = JSON.parse(storedUser);
-    if (user.value.role === 3) {
-      fetchManagerScheduleSummary(computeMinDate.value, computeMaxDate.value);
+    if (user.value.role === 2) {
+      initiateChunkedSummaryLoading();
     }
   }
   window.addEventListener('resize', handleResize);
@@ -106,6 +110,7 @@ const computeMinDate = computed(() => {
 const computeMaxDate = computed(() => {
   const date = new Date();
   date.setMonth(date.getMonth() + 3);
+  date.setDate(date.getDate());
   return date;
 });
 
@@ -125,7 +130,7 @@ async function fetchManagerScheduleSummary(start, end) {
     const startDateStr = start.toISOString().split('T')[0];
     const endDateStr = end.toISOString().split('T')[0];
 
-    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/manager-schedule-summary/${user.value.staff_id}`, {
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/manager-schedule-summary/${user.value.reporting_manager}`, {
       params: {
         start_date: startDateStr,
         end_date: endDateStr
@@ -178,7 +183,7 @@ async function fetchManagerScheduleSummary(start, end) {
       });
     });
 
-    events.value = newEvents;
+    events.value = [...events.value, ...newEvents];
   } catch (error) {
     console.error('Error fetching manager schedule summary:', error);
   }
@@ -305,10 +310,10 @@ const calendarOptions = computed(() => ({
   },
   eventClassNames: 'calendar-event',
   slotMinTime: '09:00:00',
-  slotMaxTime: '18:00:00',
+  slotMaxTime: '19:00:00',
   businessHours: {
     startTime: '09:00',
-    endTime: '18:00',
+    endTime: '19:00',
     daysOfWeek: [1, 2, 3, 4, 5],
   },
 }));
@@ -474,12 +479,48 @@ async function displayDateDetails(dateStr) {
 
 async function fetchManagerScheduleDetail(dateStr) {
   try {
-    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/manager-schedule-detail/${user.value.staff_id}/${dateStr}`);
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/manager-schedule-detail/${user.value.reporting_manager}/${dateStr}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching manager schedule detail:', error);
     return null;
   }
+}
+
+async function initiateChunkedSummaryLoading() {
+  isLoading.value = true;
+  const today = new Date();
+  // Define the date ranges for current month and surrounding months
+  const ranges = [];
+  // Current month
+  const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const currentMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  ranges.push({ start: new Date(currentMonthStart), end: new Date(currentMonthEnd) });
+  // Months before current month (2 months)
+  for (let i = 1; i <= 2; i++) {
+    const start = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    const end = new Date(today.getFullYear(), today.getMonth() - i + 1, 0);
+    ranges.push({ start, end });
+  }
+  // Months after current month (3 months)
+  for (let i = 1; i <= 3; i++) {
+    const start = new Date(today.getFullYear(), today.getMonth() + i, 1);
+    const end = new Date(today.getFullYear(), today.getMonth() + i + 1, 0);
+    ranges.push({ start, end });
+  }
+  // Function to load each range sequentially
+  for (let i = 0; i < ranges.length; i++) {
+    // For the first range (current month), load immediately
+    // For others, load in the background with a slight delay
+    if (i === 0) {
+      await fetchManagerScheduleSummary(ranges[i].start, ranges[i].end);
+    } else {
+      setTimeout(async () => {
+        await fetchManagerScheduleSummary(ranges[i].start, ranges[i].end);
+      }, i * 1000); // 1-second interval between requests
+    }
+  }
+  isLoading.value = false;
 }
 </script>
 
@@ -503,6 +544,7 @@ async function fetchManagerScheduleDetail(dateStr) {
   flex: 1;
   min-width: 300px;
   overflow-y: auto;
+  position: relative;
 }
 
 .right-container {
@@ -802,5 +844,31 @@ async function fetchManagerScheduleDetail(dateStr) {
 .yellow-event .badge,
 .default-event .badge {
   color: inherit !important;
+}
+
+/* Loading Overlay Styles */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}
+.spinner {
+  border: 8px solid #f3f3f3; /* Light grey */
+  border-top: 8px solid #3498db; /* Blue */
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 2s linear infinite;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 </style>
