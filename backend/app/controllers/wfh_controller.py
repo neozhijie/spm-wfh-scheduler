@@ -283,3 +283,15 @@ def personal_schedule(staff_id):
     except Exception as e:
         print(f"Error in manager_schedule_summary: {str(e)}")
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+    
+
+@wfh_bp.route('/staff-schedule-detail/<int:staff_id>/<date>', methods=['GET'])
+def staff_schedule_detail(staff_id, date):
+    try:
+        date_obj = datetime.strptime(date, '%Y-%m-%d').date()
+        data = WFHScheduleService.get_staff_schedule_detail(staff_id, date_obj)
+        print("Success")
+        return jsonify(data), 200
+    except Exception as e:
+        print(f"Error in staff_schedule_detail: {str(e)}")
+        return jsonify({"message": f"An error occurred: {str(e)}"}), 500

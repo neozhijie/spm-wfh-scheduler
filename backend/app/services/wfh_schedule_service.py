@@ -209,3 +209,58 @@ class WFHScheduleService:
                 'schedule': schedule,
             })
         return {'dates': dates_data}
+
+    @staticmethod
+    def get_staff_schedule_detail(staff_id, date):
+
+        manager_id = Staff.query.filter_by(staff_id=staff_id).first().reporting_manager
+
+        if manager_id:
+            print(f"The manager in charge has ID: {manager_id}")
+
+        else:
+            manager_id = staff_id
+            print(f"The manager in charge has ID: {manager_id}")
+        
+        
+        staff_list = Staff.query.filter_by(reporting_manager=manager_id).all()
+        staff_ids = [staff.staff_id for staff in staff_list]
+        if not staff_ids:
+            return {'date': date.isoformat(), 'staff': []}
+
+        staff_status = {}
+        for staff in staff_list:
+            staff_status[staff.staff_id] = {
+                'staff_id': staff.staff_id,
+                'name': f"{staff.staff_fname} {staff.staff_lname}",
+                'position': staff.position,
+                'status_am': 'OFFICE',
+                'status_pm': 'OFFICE'
+            }
+        print(staff_status)
+
+        schedules = WFHSchedule.query.filter(
+            WFHSchedule.staff_id.in_(staff_ids),
+            WFHSchedule.date == date,
+            WFHSchedule.status == 'APPROVED'
+        ).all()
+
+        for sched in schedules:
+            if sched.duration == 'FULL_DAY':
+                staff_status[sched.staff_id]['status_am'] = 'WFH'
+                staff_status[sched.staff_id]['status_pm'] = 'WFH'
+            elif sched.duration == 'HALF_DAY_AM':
+                staff_status[sched.staff_id]['status_am'] = 'WFH'
+                staff_status[sched.staff_id]['status_pm'] = 'OFFICE'
+            elif sched.duration == 'HALF_DAY_PM':
+                staff_status[sched.staff_id]['status_am'] = 'OFFICE'
+                staff_status[sched.staff_id]['status_pm'] = 'WFH'
+
+        staff_list_status = list(staff_status.values())
+
+        return {
+            'date': date.isoformat(),
+            'staff': staff_list_status
+        }
+
+
