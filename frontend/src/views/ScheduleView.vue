@@ -12,6 +12,9 @@
           <FullCalendar 
             :options="calendarOptions"
           />
+          <div v-if="isLoading" class="loading-overlay">
+            <div class="spinner"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -143,34 +146,34 @@ const calendarOptions = computed(() => ({
   weekends: false,
   events: events.value,  // Make sure this is reactive
   eventContent: function(arg) {
-  const container = document.createElement('div');
-  container.style.display = 'flex';
-  container.style.flexDirection = 'column';
-  container.style.justifyContent = 'center';
-  container.style.alignItems = 'center';
-  container.style.padding = '5px';
-  container.style.backgroundColor = arg.event.backgroundColor || '#3788d8';
+    const container = document.createElement('div');
 
-  // Create a title element and add it to the container
-  const title = document.createElement('span');
-  title.textContent = arg.event.title; // The event title
-  title.style.fontWeight = 'bold';
-  title.style.fontSize = '12px';
-  title.style.color = 'white';
-  
-  container.appendChild(title);
+    container.style.borderRadius = '4px';
+    container.style.margin = '1px 0';
+    container.style.padding = '2px 4px';
+    container.style.fontSize = '0.8em';
+    container.style.width = '100%';
+    container.style.height = '100%';
+    container.style.backgroundColor = arg.event.backgroundColor || '#3788d8';
 
-  // If there's extendedProps for timeOfDay, display it too
-  if (arg.event.extendedProps.timeOfDay) {
-    const timeOfDay = document.createElement('span');
-    timeOfDay.textContent = arg.event.extendedProps.timeOfDay;
-    timeOfDay.style.fontSize = '10px';
-    timeOfDay.style.color = 'lightgray';
-    container.appendChild(timeOfDay);
-  }
+    const title = document.createElement('span');
+    title.textContent = arg.event.title;
+    title.style.fontWeight = 'bold';
+    title.style.fontSize = '12px';
+    title.style.color = 'white';
 
-  return { domNodes: [container] };
-},
+    container.appendChild(title);
+
+    if (arg.event.extendedProps.timeOfDay) {
+      const timeOfDay = document.createElement('span');
+      timeOfDay.textContent = arg.event.extendedProps.timeOfDay;
+      timeOfDay.style.fontSize = '10px';
+      timeOfDay.style.color = 'lightgray';
+      container.appendChild(timeOfDay);
+    }
+
+    return { domNodes: [container] };
+  },
   eventClassNames:'calendar-event',
   allDaySlot: false,
   slotMinTime: '09:00:00',
@@ -225,6 +228,8 @@ async function initiateChunkedSummaryLoading() {
   // Load the current month events first
   await fetchEvents(ranges[0].start, ranges[0].end);
 
+  isLoading.value = false;
+  
   // Load past 2 and next 3 months together
   const promises = [];
   for (let i = 1; i < ranges.length; i++) {
@@ -234,7 +239,6 @@ async function initiateChunkedSummaryLoading() {
   // Wait for all past and future month events to load
   await Promise.all(promises);
 
-  isLoading.value = false;
 }
 
 </script>
@@ -267,7 +271,43 @@ async function initiateChunkedSummaryLoading() {
   width: 100%;
   height: 100%;
 }
+.fc-daygrid-event {
+  width: 100% !important;
+  height: auto;
+  white-space: normal; /* Prevent text overflow */
+}
 
+.fc-daygrid-event > div {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 90%;  /* Ensure container spans the full width */
+}
 
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}
 
+.spinner {
+  border: 8px solid #f3f3f3; /* Light grey */
+  border-top: 8px solid #3498db; /* Blue */
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 </style>
