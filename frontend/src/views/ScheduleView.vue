@@ -30,6 +30,7 @@ import axios from 'axios';
 const user = ref({});
 const selectedDate = ref('');
 const events = ref([]); // Reactive array to hold events
+const isLoading = ref(false);
 
 // User data from local storage
 onMounted(() => {
@@ -37,7 +38,7 @@ onMounted(() => {
   if (storedUser) {
     user.value = JSON.parse(storedUser);
   }
-  fetchEvents(); // Fetch events on mount
+  initiateChunkedSummaryLoading(); // Fetch events on mount
 });
 
 // Computed properties for valid date range
@@ -54,50 +55,60 @@ const computeMaxDate = computed(() => {
 });
 
 // Function to fetch events from the backend
-async function fetchEvents() {
+async function fetchEvents(startDate, endDate) {
   try {
-    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/personal-schedule/${user.value.staff_id}`);
+    const startDateStr = startDate.toISOString().split('T')[0];
+    const endDateStr = endDate.toISOString().split('T')[0];
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/personal-schedule/${user.value.staff_id}`, {
+      params: {
+        start_date: startDateStr,
+        end_date: endDateStr
+      }
+    });
     const fetchedDates = response.data.dates;
     console.log(response.data);
+
+    // Clear existing events before pushing new ones
+    const newEvents = [];
 
     fetchedDates.forEach(dateObj => {
       const eventDate = dateObj.date;
       const wfhStatus = dateObj.schedule;
 
       if (wfhStatus === 'AM') {
-        events.value.push({
+        newEvents.push({
           title: 'WFH AM',
           start: `${eventDate}T09:00:00`,
           end: `${eventDate}T13:00:00`
         });
       } else if (wfhStatus === 'PM') {
-        events.value.push({
+        newEvents.push({
           title: 'WFH PM',
           start: `${eventDate}T14:00:00`,
           end: `${eventDate}T18:00:00`
         });
       } else if (wfhStatus === 'FullDay') {
-        events.value.push({
+        newEvents.push({
           title: 'WFH Full Day',
           start: `${eventDate}T09:00:00`,
           end: `${eventDate}T18:00:00`
         });
       } else if (wfhStatus === 'FullDayPending') {
-        events.value.push({
+        newEvents.push({
           title: 'Pending WFH Full Day',
           start: `${eventDate}T09:00:00`,
           end: `${eventDate}T18:00:00`,
           backgroundColor: '#FFA500'
         });
       } else if (wfhStatus === 'AMPending') {
-        events.value.push({
+        newEvents.push({
           title: 'Pending WFH AM',
           start: `${eventDate}T09:00:00`,
           end: `${eventDate}T13:00:00`,
           backgroundColor: '#FFA500'
         });
       } else if (wfhStatus === 'PMPending') {
-        events.value.push({
+        newEvents.push({
           title: 'Pending WFH PM',
           start: `${eventDate}T14:00:00`,
           end: `${eventDate}T18:00:00`,
@@ -105,6 +116,10 @@ async function fetchEvents() {
         });
       } 
     });
+
+    // Update the reactive events array
+    events.value.push(...newEvents); 
+
   } catch (error) {
     console.error('Error fetching events:', error);
   }
@@ -125,7 +140,37 @@ const calendarOptions = computed(() => ({
     start: computeMinDate.value,
     end: computeMaxDate.value,
   },
-  events: events.value,
+  weekends: false,
+  events: events.value,  // Make sure this is reactive
+  eventContent: function(arg) {
+  const container = document.createElement('div');
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.justifyContent = 'center';
+  container.style.alignItems = 'center';
+  container.style.padding = '5px';
+  container.style.backgroundColor = arg.event.backgroundColor || '#3788d8';
+
+  // Create a title element and add it to the container
+  const title = document.createElement('span');
+  title.textContent = arg.event.title; // The event title
+  title.style.fontWeight = 'bold';
+  title.style.fontSize = '12px';
+  title.style.color = 'white';
+  
+  container.appendChild(title);
+
+  // If there's extendedProps for timeOfDay, display it too
+  if (arg.event.extendedProps.timeOfDay) {
+    const timeOfDay = document.createElement('span');
+    timeOfDay.textContent = arg.event.extendedProps.timeOfDay;
+    timeOfDay.style.fontSize = '10px';
+    timeOfDay.style.color = 'lightgray';
+    container.appendChild(timeOfDay);
+  }
+
+  return { domNodes: [container] };
+},
   eventClassNames:'calendar-event',
   allDaySlot: false,
   slotMinTime: '09:00:00',
@@ -136,9 +181,6 @@ const calendarOptions = computed(() => ({
     daysOfWeek: [1, 2, 3, 4, 5],
   },
 }));
-
-
-
 
 // Handle date click event
 async function handleDateClick(info) {
@@ -153,6 +195,48 @@ async function handleDateClick(info) {
     selectedDate.value = info.dateStr;
   }
 }
+
+async function initiateChunkedSummaryLoading() {
+  isLoading.value = true;
+  const today = new Date();
+
+  // Define the date ranges
+  const ranges = [];
+
+  // Current month
+  const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const currentMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  ranges.push({ start: currentMonthStart, end: currentMonthEnd });
+
+  // Past 2 months
+  for (let i = 1; i <= 2; i++) {
+    const start = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    const end = new Date(today.getFullYear(), today.getMonth() - i + 1, 0);
+    ranges.push({ start, end });
+  }
+
+  // Next 3 months
+  for (let i = 1; i <= 3; i++) {
+    const start = new Date(today.getFullYear(), today.getMonth() + i, 1);
+    const end = new Date(today.getFullYear(), today.getMonth() + i + 1, 0);
+    ranges.push({ start, end });
+  }
+
+  // Load the current month events first
+  await fetchEvents(ranges[0].start, ranges[0].end);
+
+  // Load past 2 and next 3 months together
+  const promises = [];
+  for (let i = 1; i < ranges.length; i++) {
+    promises.push(fetchEvents(ranges[i].start, ranges[i].end));
+  }
+
+  // Wait for all past and future month events to load
+  await Promise.all(promises);
+
+  isLoading.value = false;
+}
+
 </script>
 
 <style scoped>
@@ -183,7 +267,6 @@ async function handleDateClick(info) {
   width: 100%;
   height: 100%;
 }
-
 
 
 
