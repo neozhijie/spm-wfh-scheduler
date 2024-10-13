@@ -18,7 +18,7 @@
               <!-- Close button is always rendered but hidden on larger screens via CSS -->
               <button class="close-button" @click="isRightContainerVisible = false">×</button>
             </div>
-            <div class="time-slot" v-for="(slot, key) in selectedDateDetails" :key="key">
+            <div class="time-slot card" v-for="(slot, key) in selectedDateDetails" :key="key">
               <details open>
                 <summary>
                   <span class="time-label">{{ key }}</span>
@@ -63,7 +63,6 @@
     </div>
   </div>
 </template>
-
 <script setup>
 import { ref, onMounted, computed, onUnmounted } from 'vue';
 import Navbar from '@/components/Navbar.vue';
@@ -197,126 +196,132 @@ function getDateStr(dateObj) {
   return `${year}-${month}-${day}`;
 }
 
-const calendarOptions = computed(() => ({
-  plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
-  initialView: 'dayGridMonth',
-  headerToolbar: {
-    left: 'prev,next today',
-    center: 'title',
-    right: 'dayGridMonth,timeGridWeek,timeGridDay',
-  },
-  dateClick: handleDateClick,
-  eventClick: handleEventClick,
-  datesSet: handleDatesSet,
-  selectable: true,
-  validRange: {
-    start: computeMinDate.value,
-    end: computeMaxDate.value,
-  },
-  weekends: false,
-  events: events.value,
-  allDaySlot: false,
-  eventContent: function(arg) {
-    if (arg.event.extendedProps.timeOfDay) {
-      const timeOfDay = arg.event.extendedProps.timeOfDay;
-      const officeCount = arg.event.extendedProps.officeCount;
-      const totalStaff = arg.event.extendedProps.totalStaff;
-      const percentage = arg.event.extendedProps.percentage;
+const calendarOptions = computed(() => {
+  let smallScreen = isSmallScreen.value;
 
-      const container = document.createElement('div');
-      container.style.display = 'flex';
-      container.style.flexDirection = 'column';
-      container.style.justifyContent = 'center';
-      container.style.alignItems = 'flex-start'; // Align badges beside text
-      container.style.backgroundColor = arg.event.backgroundColor;
+  return {
+    plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
+    initialView: 'dayGridMonth',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek,timeGridDay',
+    },
+    dateClick: handleDateClick,
+    eventClick: handleEventClick,
+    datesSet: handleDatesSet,
+    selectable: true,
+    validRange: {
+      start: computeMinDate.value,
+      end: computeMaxDate.value,
+    },
+    weekends: false,
+    events: events.value,
+    allDaySlot: false,
+    eventContent: function(arg) {
+      if (arg.event.extendedProps.timeOfDay) {
+        const timeOfDay = arg.event.extendedProps.timeOfDay;
+        const officeCount = arg.event.extendedProps.officeCount;
+        const totalStaff = arg.event.extendedProps.totalStaff;
+        const percentage = arg.event.extendedProps.percentage;
 
-      // Assign a class based on background color
-      if (arg.event.backgroundColor === '#FFD93D') { // Yellow
-        container.classList.add('yellow-event');
-      } else {
-        container.classList.add('default-event');
+        const container = document.createElement('div');
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.style.justifyContent = 'center';
+        container.style.alignItems = 'flex-start'; // Align badges beside text
+        container.style.backgroundColor = arg.event.backgroundColor;
+
+        // Assign a class based on background color
+        if (arg.event.backgroundColor === '#FFD93D') { // Yellow
+          container.classList.add('yellow-event');
+        } else {
+          container.classList.add('default-event');
+        }
+
+        container.style.borderRadius = '4px';
+        container.style.margin = '1px 0';
+        container.style.padding = '2px 4px';
+        container.style.fontSize = '0.8em';
+        container.style.width = '100%';
+        container.style.height = '100%';
+
+        // Create a wrapper for the label and badges
+        const labelContainer = document.createElement('div');
+        labelContainer.style.display = 'flex';
+        labelContainer.style.alignItems = 'center';
+        labelContainer.style.width = '100%';
+        labelContainer.style.justifyContent = 'space-between';
+
+        const label = document.createElement('span');
+        label.textContent = `${timeOfDay}`;
+
+        const badgesWrapper = document.createElement('div');
+        badgesWrapper.style.display = 'flex';
+        badgesWrapper.style.gap = '4px';
+
+        // Create Office Badge
+        const officeBadge = document.createElement('span');
+        officeBadge.classList.add('badge', 'badge-office-calendar');
+        officeBadge.textContent = `In Office: ${officeCount}`;
+
+        badgesWrapper.appendChild(officeBadge);
+
+        // Conditionally add WFH badge if not small screen
+        if (!smallScreen) {
+          const wfhBadge = document.createElement('span');
+          wfhBadge.classList.add('badge', 'badge-wfh-calendar');
+          wfhBadge.textContent = `WFH: ${totalStaff - officeCount}`;
+          badgesWrapper.appendChild(wfhBadge);
+        }
+
+        labelContainer.appendChild(label);
+        labelContainer.appendChild(badgesWrapper);
+
+        container.appendChild(labelContainer);
+
+        return { domNodes: [container] };
       }
+      return null;
+    },
+    eventDidMount: function(info) {
+      // This function is called after the event has been rendered
 
-      container.style.borderRadius = '4px';
-      container.style.margin = '1px 0';
-      container.style.padding = '2px 4px';
-      container.style.fontSize = '0.8em';
-      container.style.width = '100%';
-      container.style.height = '100%';
+      // Ensure the container has the correct text color based on background
+      const bgColor = info.event.backgroundColor.toUpperCase();
+      const yellowHex = '#FFD93D';
 
-      // Create a wrapper for the label and badges
-      const labelContainer = document.createElement('div');
-      labelContainer.style.display = 'flex';
-      labelContainer.style.alignItems = 'center';
-      labelContainer.style.width = '100%';
-      labelContainer.style.justifyContent = 'space-between';
+      if (bgColor === yellowHex) {
+        // Set text color to black
+        info.el.style.color = '#000000';
 
-      const label = document.createElement('span');
-      label.textContent = `${timeOfDay}`;
+        // Additionally, set all child elements to inherit the color
+        // This ensures badges and other texts also become black
+        const elements = info.el.querySelectorAll('*');
+        elements.forEach(el => {
+          // Override any inline styles that set color
+          el.style.color = 'inherit';
+        });
+      } else {
+        // Default text color (you can adjust this as needed)
+        info.el.style.color = '#ffffff';
 
-      const badgesWrapper = document.createElement('div');
-      badgesWrapper.style.display = 'flex';
-      badgesWrapper.style.gap = '4px';
-
-      // Create Office Badge
-      const officeBadge = document.createElement('span');
-      officeBadge.classList.add('badge', 'badge-office-calendar');
-      officeBadge.textContent = `In Office: ${officeCount}`;
-
-      // Create WFH Badge
-      const wfhBadge = document.createElement('span');
-      wfhBadge.classList.add('badge', 'badge-wfh-calendar');
-      wfhBadge.textContent = `WFH: ${totalStaff - officeCount}`;
-
-      badgesWrapper.appendChild(officeBadge);
-      badgesWrapper.appendChild(wfhBadge);
-
-      labelContainer.appendChild(label);
-      labelContainer.appendChild(badgesWrapper);
-
-      container.appendChild(labelContainer);
-
-      return { domNodes: [container] };
-    }
-    return null;
-  },
-  eventDidMount: function(info) {
-    // This function is called after the event has been rendered
-
-    // Ensure the container has the correct text color based on background
-    const bgColor = info.event.backgroundColor.toUpperCase();
-    const yellowHex = '#FFD93D';
-
-    if (bgColor === yellowHex) {
-      // Set text color to black
-      info.el.style.color = '#000000';
-
-      // Additionally, set all child elements to inherit the color
-      // This ensures badges and other texts also become black
-      const elements = info.el.querySelectorAll('*');
-      elements.forEach(el => {
-        // Override any inline styles that set color
-        el.style.color = 'inherit';
-      });
-    } else {
-      // Default text color (you can adjust this as needed)
-      info.el.style.color = '#ffffff';
-
-      const elements = info.el.querySelectorAll('*');
-      elements.forEach(el => {
-        el.style.color = 'inherit';
-      });
-    }
-  },
-  eventClassNames: 'calendar-event',
-  slotMinTime: '09:00:00',
-  slotMaxTime: '19:00:00',
-  businessHours: {
-    startTime: '09:00',
-    endTime: '18:00',
-    daysOfWeek: [1, 2, 3, 4, 5],
-  },
-}));
+        const elements = info.el.querySelectorAll('*');
+        elements.forEach(el => {
+          el.style.color = 'inherit';
+        });
+      }
+    },
+    eventClassNames: 'calendar-event',
+    slotMinTime: '09:00:00',
+    slotMaxTime: '19:00:00',
+    businessHours: {
+      startTime: '09:00',
+      endTime: '18:00',
+      daysOfWeek: [1, 2, 3, 4, 5],
+    },
+  };
+});
 
 async function handleDateClick(info) {
   if (info.view.type === 'dayGridMonth') {
@@ -530,7 +535,6 @@ async function initiateChunkedSummaryLoading() {
   isLoading.value = false;
 }
 </script>
-
 <style scoped>
 .dashboard-container {
   display: flex;
@@ -656,8 +660,9 @@ async function initiateChunkedSummaryLoading() {
   margin-left: 0.5em;
 }
 
-.team {
+.card {
   margin-bottom: 0.5em;
+  margin-top: 0.5em;
   border: 1px solid #dfe3e8;
   border-radius: 8px;
   padding: 0.5em;
