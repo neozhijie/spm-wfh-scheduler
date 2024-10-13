@@ -11,20 +11,22 @@ class WFHScheduleService:
         current_date = start_date
         
         while True:
-
-            existing_schedule = WFHSchedule.query.filter(
+            # Query all schedules for the current date
+            existing_schedules = WFHSchedule.query.filter(
                 WFHSchedule.staff_id == staff_id,
                 WFHSchedule.date == current_date,
                 WFHSchedule.status != 'EXPIRED'
-            ).first()
+            ).all()
             
-            if existing_schedule and existing_schedule.status != 'REJECTED':
+            # Check if any of the existing schedules are 'APPROVED' or 'PENDING'
+            if any(schedule.status in ['APPROVED', 'PENDING'] for schedule in existing_schedules):
                 print(f"Schedule for {current_date} already exists")
                 current_date += timedelta(days=7)  # Move to the next week
                 if end_date is None or current_date > end_date:
                     break  # If no end_date or we've passed the end_date, stop creating schedule
                 continue
 
+            # Create a new schedule if no 'APPROVED' or 'PENDING' schedules exist
             new_schedule = WFHSchedule(
                 request_id=request_id,
                 staff_id=staff_id,
@@ -48,7 +50,6 @@ class WFHScheduleService:
             db.session.commit()
             raise ValueError("No schedules were created")
 
-        
         db.session.commit()
         return schedules
     
@@ -262,5 +263,3 @@ class WFHScheduleService:
             'date': date.isoformat(),
             'staff': staff_list_status
         }
-
-
