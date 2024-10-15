@@ -41,7 +41,7 @@ def create_wfh_request():
             request_date=today,
             start_date=data['date'],
             end_date=end_date,
-            reason_for_applying=data['reason_for_applying']
+            reason_for_applying=data['reason_for_applying'],duration=data['duration']
         )
         print(f"WFH request created successfully. Request ID: {wfh_request.request_id}")
 

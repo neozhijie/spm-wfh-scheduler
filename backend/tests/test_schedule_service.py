@@ -75,6 +75,7 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
             start_date=start_date,
             end_date=None,
             reason_for_applying="Test schedule",
+            duration="FULL_DAY",
         )
         db.session.add(wfh_request)
         db.session.commit()
@@ -105,6 +106,7 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
             start_date=start_date,
             end_date=end_date,
             reason_for_applying="Test recurring schedule",
+            duration="FULL_DAY",
         )
         db.session.add(wfh_request)
         db.session.commit()
@@ -135,6 +137,7 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
             start_date=start_date,
             end_date=None,
             reason_for_applying="Test schedule",
+            duration="FULL_DAY",
         )
         db.session.add(wfh_request)
         db.session.commit()
@@ -178,6 +181,7 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
             start_date=start_date,
             end_date=end_date,
             reason_for_applying="Test schedule",
+            duration="FULL_DAY",
         )
         db.session.add(wfh_request)
         db.session.commit()

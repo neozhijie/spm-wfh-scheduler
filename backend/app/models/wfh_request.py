@@ -10,6 +10,7 @@ class WFHRequest(db.Model):
     request_date = db.Column(db.Date, nullable=False)
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date, nullable=True)
+    duration = db.Column(db.String(20), nullable=False)
     status = db.Column(db.String(20), nullable=False, server_default=expression.text("'PENDING'"))
     reason_for_applying = db.Column(db.Text, nullable=False)
     reason_for_rejection = db.Column(db.Text, nullable=True)
@@ -29,5 +30,6 @@ class WFHRequest(db.Model):
             'status': self.status,
             'reason_for_applying': self.reason_for_applying,
             'reason_for_rejection': self.reason_for_rejection,
-            'is_recurring': self.end_date is not None
+            'is_recurring': self.end_date is not None,
+            'duration': self.duration
         }

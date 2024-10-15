@@ -113,6 +113,7 @@ class WFHControllerTestCase(unittest.TestCase):
             request_date=self.today,
             start_date=datetime.strptime(self.future_date, "%Y-%m-%d").date(),
             reason_for_applying="Pending request",
+            duration="FULL_DAY",
         )
         db.session.add(wfh_request)
         db.session.commit()
@@ -137,6 +138,7 @@ class WFHControllerTestCase(unittest.TestCase):
             request_date=self.today,
             start_date=datetime.strptime(self.future_date, "%Y-%m-%d").date(),
             reason_for_applying="Pending request",
+            duration="FULL_DAY",
         )
         db.session.add(wfh_request)
         db.session.commit()
@@ -175,6 +177,7 @@ class WFHControllerTestCase(unittest.TestCase):
             request_date=self.today,
             start_date=datetime.strptime(self.future_date, "%Y-%m-%d").date(),
             reason_for_applying="Pending request",
+            duration="FULL_DAY",
         )
         db.session.add(wfh_request)
         db.session.commit()
@@ -214,6 +217,7 @@ class WFHControllerTestCase(unittest.TestCase):
             request_date=self.today,
             start_date=datetime.strptime(expired_date, "%Y-%m-%d").date(),
             reason_for_applying="Expired request",
+            duration="FULL_DAY",
         )
         db.session.add(expired_request)
         db.session.commit()

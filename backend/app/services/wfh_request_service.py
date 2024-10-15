@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, date
 
 class WFHRequestService:
     @staticmethod
-    def create_request(staff_id, manager_id, request_date, start_date, end_date, reason_for_applying):
+    def create_request(staff_id, manager_id, request_date, start_date, end_date, reason_for_applying, duration):
         error_message = None
         # Check if the start date is valid (within 2 months before or 3 months after today)
         max_valid_date = datetime.now().date() + timedelta(days=90)
@@ -52,7 +52,7 @@ class WFHRequestService:
             request_date=request_date,
             start_date=start_date,
             end_date=end_date,
-            reason_for_applying=reason_for_applying
+            reason_for_applying=reason_for_applying, duration=duration
         )
         db.session.add(new_request)
         db.session.commit()

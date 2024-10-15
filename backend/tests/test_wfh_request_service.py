@@ -74,6 +74,7 @@ class WFHRequestServiceTestCase(unittest.TestCase):
             start_date=start_date,
             end_date=end_date,
             reason_for_applying="Need to work from home",
+            duration="FULL_DAY",
         )
         self.assertIsNotNone(wfh_request)
         self.assertEqual(wfh_request.staff_id, self.staff3.staff_id)
@@ -89,6 +90,7 @@ class WFHRequestServiceTestCase(unittest.TestCase):
                 start_date=invalid_start_date,
                 end_date=None,
                 reason_for_applying="Need to work from home",
+                duration="FULL_DAY",
             )
         self.assertEqual(
             str(context.exception),
@@ -107,6 +109,7 @@ class WFHRequestServiceTestCase(unittest.TestCase):
                 start_date=start_date,
                 end_date=end_date,
                 reason_for_applying="Need to work from home",
+                duration="FULL_DAY",
             )
         self.assertEqual(str(context.exception), "End date must be after start date.")
 
@@ -120,6 +123,7 @@ class WFHRequestServiceTestCase(unittest.TestCase):
             start_date=start_date,
             end_date=None,
             reason_for_applying="First request",
+            duration="FULL_DAY",
         )
         with self.assertRaises(ValueError) as context:
             WFHRequestService.create_request(
@@ -129,6 +133,7 @@ class WFHRequestServiceTestCase(unittest.TestCase):
                 start_date=start_date,
                 end_date=None,
                 reason_for_applying="Second request",
+                duration="FULL_DAY",
             )
         self.assertEqual(
             str(context.exception), "A request for this date already exists."
@@ -144,6 +149,7 @@ class WFHRequestServiceTestCase(unittest.TestCase):
             start_date=start_date,
             end_date=None,
             reason_for_applying="Need to work from home",
+            duration="FULL_DAY",
         )
         pending_requests = WFHRequestService.get_pending_requests_for_manager(
             self.staff2.staff_id
@@ -161,6 +167,7 @@ class WFHRequestServiceTestCase(unittest.TestCase):
             start_date=start_date,
             end_date=None,
             reason_for_applying="Need to work from home",
+            duration="FULL_DAY",
         )
         two_months_ago = today - timedelta(days=60)
         response = WFHRequestService.update_request(
@@ -183,6 +190,7 @@ class WFHRequestServiceTestCase(unittest.TestCase):
             start_date=invalid_start_date,
             end_date=None,
             reason_for_applying="Need to work from home",
+            duration="FULL_DAY",
         )
         db.session.add(wfh_request)
         db.session.commit()
@@ -219,6 +227,7 @@ class WFHRequestServiceTestCase(unittest.TestCase):
             start_date=valid_start_date,
             end_date=None,
             reason_for_applying="Valid request",
+            duration="FULL_DAY",
         )
         expired_request = WFHRequest(
             staff_id=self.staff3.staff_id,
@@ -227,6 +236,7 @@ class WFHRequestServiceTestCase(unittest.TestCase):
             start_date=expired_start_date,
             end_date=None,
             reason_for_applying="Expired request",
+            duration="FULL_DAY",
         )
         db.session.add_all([valid_request, expired_request])
         db.session.commit()
@@ -263,6 +273,7 @@ class WFHRequestServiceTestCase(unittest.TestCase):
                 start_date=start_date,
                 end_date=None,
                 reason_for_applying="Need to work from home",
+                duration="FULL_DAY",
             )
         self.assertEqual(
             str(context.exception),
@@ -281,6 +292,7 @@ class WFHRequestServiceTestCase(unittest.TestCase):
                 start_date=start_date,
                 end_date=end_date,
                 reason_for_applying="Need to work from home",
+                duration="FULL_DAY",
             )
         self.assertEqual(str(context.exception), "End date must be after start date.")
 
