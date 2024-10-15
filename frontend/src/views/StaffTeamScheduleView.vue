@@ -7,52 +7,114 @@
           <FullCalendar 
             :options="calendarOptions"
           />
-        </div>
-        <div v-if="isLoading" class="loading-overlay">
+          <div v-if="isLoading" class="loading-overlay">
             <div class="spinner"></div>
+          </div>
         </div>
         <div class="right-container" :class="{'show': isRightContainerVisible }">
           <div v-if="selectedDateDetails" class="details-container">
             <div class="details-header">
               <h2>Details for {{ selectedDate }}</h2>
-              <!-- Close button is always rendered but hidden on larger screens via CSS -->
-              <button class="close-button" @click="isRightContainerVisible = false">×</button>
+              <!-- Close button is only rendered for small screens -->
+              <button 
+                v-if="isSmallScreen" 
+                class="close-button" 
+                @click="isRightContainerVisible = false"
+              >
+                ×
+              </button>
             </div>
-            <div class="time-slot" v-for="(slot, key) in selectedDateDetails" :key="key">
-              <details open>
-                <summary>
-                  <span class="time-label">{{ key }}</span>
-                  <div class="badge-container">
-                    <span class="badge badge-office">
-                      In Office ({{ slot.inOffice }}/{{ slot.total }})
-                    </span>
-                    <span class="badge badge-wfh">
-                      WFH ({{ slot.wfh }}/{{ slot.total }})
-                    </span>
+            <div class="tabs">
+              <button 
+                :class="['tab', activeTab === 'AM' ? 'active' : '']" 
+                @click="activeTab = 'AM'"
+              >
+                AM
+              </button>
+              <button 
+                :class="['tab', activeTab === 'PM' ? 'active' : '']" 
+                @click="activeTab = 'PM'"
+              >
+                PM
+              </button>
+            </div>
+            <div class="tab-content">
+              <div v-if="activeTab === 'AM'">
+                <div class="summary">
+                  <div class="summary-item">
+                    <span class="summary-label">In Office:</span>
+                    <span class="summary-value">{{ selectedDateDetails.AM.inOffice }} / {{ selectedDateDetails.AM.total }}</span>
                   </div>
-                </summary>
+                  <div class="summary-item">
+                    <span class="summary-label">WFH:</span>
+                    <span class="summary-value">{{ selectedDateDetails.AM.wfh }} / {{ selectedDateDetails.AM.total }}</span>
+                  </div>
+                </div>
                 <div class="teams">
-                  <div class="team card" v-for="team in slot.teams" :key="team.teamName">
-                    <details>
-                      <summary>
-                        {{ team.teamName }}
+                  <div 
+                    class="team card" 
+                    v-for="team in selectedDateDetails.AM.teams" 
+                    :key="team.teamName"
+                    @click="toggleTeam('AM', team.teamName)"
+                  >
+                    <div class="team-header">
+                      <h3>{{ team.teamName }}</h3>
+                      <div class="badge-container">
                         <span class="badge badge-office">
                           In Office: {{ team.inOffice }}/{{ team.total }}
                         </span>
                         <span class="badge badge-wfh">
                           WFH: {{ team.wfh }}/{{ team.total }}
                         </span>
-                      </summary>
-                      <div class="staff-list">
-                        <div class="staff-card" v-for="staff in team.staff" :key="staff.staff_id">
-                          <span :class="['status-indicator', staff.status === 'OFFICE' ? 'green' : 'yellow']"></span>
-                          <span class="staff-name">{{ staff.name }}</span>
-                        </div>
                       </div>
-                    </details>
+                    </div>
+                    <div class="staff-list" v-if="expandedTeams['AM-' + team.teamName]">
+                      <div class="staff-card" v-for="staff in team.staff" :key="staff.staff_id">
+                        <span :class="['status-indicator', staff.status === 'OFFICE' ? 'green' : 'yellow']"></span>
+                        <span class="staff-name">{{ staff.name }}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </details>
+              </div>
+              <div v-else-if="activeTab === 'PM'">
+                <div class="summary">
+                  <div class="summary-item">
+                    <span class="summary-label">In Office:</span>
+                    <span class="summary-value">{{ selectedDateDetails.PM.inOffice }} / {{ selectedDateDetails.PM.total }}</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">WFH:</span>
+                    <span class="summary-value">{{ selectedDateDetails.PM.wfh }} / {{ selectedDateDetails.PM.total }}</span>
+                  </div>
+                </div>
+                <div class="teams">
+                  <div 
+                    class="team card" 
+                    v-for="team in selectedDateDetails.PM.teams" 
+                    :key="team.teamName"
+                    @click="toggleTeam('PM', team.teamName)"
+                  >
+                    <div class="team-header">
+                      <h3>{{ team.teamName }}</h3>
+                      <div class="badge-container">
+                        <span class="badge badge-office">
+                          In Office: {{ team.inOffice }}/{{ team.total }}
+                        </span>
+                        <span class="badge badge-wfh">
+                          WFH: {{ team.wfh }}/{{ team.total }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="staff-list" v-if="expandedTeams['PM-' + team.teamName]">
+                      <div class="staff-card" v-for="staff in team.staff" :key="staff.staff_id">
+                        <span :class="['status-indicator', staff.status === 'OFFICE' ? 'green' : 'yellow']"></span>
+                        <span class="staff-name">{{ staff.name }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <div v-else class="no-selection">
@@ -78,8 +140,10 @@ const selectedDate = ref('');
 const events = ref([]);
 const selectedDateDetails = ref(null);
 const isRightContainerVisible = ref(false);
-const isSmallScreen = ref(window.innerWidth < 768); // Reactive property for screen size
+const isSmallScreen = ref(window.innerWidth < 768);
 const isLoading = ref(false);
+const activeTab = ref('AM');
+const expandedTeams = ref({});
 
 const handleResize = () => {
   isSmallScreen.value = window.innerWidth < 768;
@@ -103,14 +167,12 @@ onUnmounted(() => {
 const computeMinDate = computed(() => {
   const date = new Date();
   date.setMonth(date.getMonth() - 2);
-  date.setDate(date.getDate());
   return date;
 });
 
 const computeMaxDate = computed(() => {
   const date = new Date();
   date.setMonth(date.getMonth() + 3);
-  date.setDate(date.getDate());
   return date;
 });
 
@@ -190,133 +252,126 @@ async function fetchManagerScheduleSummary(start, end) {
 }
 
 function getDateStr(dateObj) {
-  // Ensure the date is formatted correctly using local timezone
   const year = dateObj.getFullYear();
   const month = ('0' + (dateObj.getMonth() + 1)).slice(-2);
   const day = ('0' + dateObj.getDate()).slice(-2);
   return `${year}-${month}-${day}`;
 }
 
-const calendarOptions = computed(() => ({
-  plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
-  initialView: 'dayGridMonth',
-  headerToolbar: {
-    left: 'prev,next today',
-    center: 'title',
-    right: 'dayGridMonth,timeGridWeek,timeGridDay',
-  },
-  dateClick: handleDateClick,
-  eventClick: handleEventClick,
-  datesSet: handleDatesSet,
-  selectable: true,
-  validRange: {
-    start: computeMinDate.value,
-    end: computeMaxDate.value,
-  },
-  weekends: false,
-  events: events.value,
-  allDaySlot: false,
-  eventContent: function(arg) {
-    if (arg.event.extendedProps.timeOfDay) {
-      const timeOfDay = arg.event.extendedProps.timeOfDay;
-      const officeCount = arg.event.extendedProps.officeCount;
-      const totalStaff = arg.event.extendedProps.totalStaff;
-      const percentage = arg.event.extendedProps.percentage;
+const calendarOptions = computed(() => {
+  let smallScreen = isSmallScreen.value;
 
-      const container = document.createElement('div');
-      container.style.display = 'flex';
-      container.style.flexDirection = 'column';
-      container.style.justifyContent = 'center';
-      container.style.alignItems = 'flex-start'; // Align badges beside text
-      container.style.backgroundColor = arg.event.backgroundColor;
+  return {
+    plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
+    initialView: 'dayGridMonth',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek,timeGridDay',
+    },
+    dateClick: handleDateClick,
+    eventClick: handleEventClick,
+    datesSet: handleDatesSet,
+    selectable: true,
+    validRange: {
+      start: computeMinDate.value,
+      end: computeMaxDate.value,
+    },
+    weekends: false,
+    events: events.value,
+    allDaySlot: false,
+    eventContent: function(arg) {
+      if (arg.event.extendedProps.timeOfDay) {
+        const timeOfDay = arg.event.extendedProps.timeOfDay;
+        const officeCount = arg.event.extendedProps.officeCount;
+        const totalStaff = arg.event.extendedProps.totalStaff;
+        const percentage = arg.event.extendedProps.percentage;
 
-      // Assign a class based on background color
-      if (arg.event.backgroundColor === '#FFD93D') { // Yellow
-        container.classList.add('yellow-event');
-      } else {
-        container.classList.add('default-event');
+        const container = document.createElement('div');
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.style.justifyContent = 'center';
+        container.style.alignItems = 'flex-start';
+        container.style.backgroundColor = arg.event.backgroundColor;
+
+        if (arg.event.backgroundColor === '#FFD93D') {
+          container.classList.add('yellow-event');
+        } else {
+          container.classList.add('default-event');
+        }
+
+        container.style.borderRadius = '4px';
+        container.style.margin = '1px 0';
+        container.style.padding = '2px 4px';
+        container.style.fontSize = '0.8em';
+        container.style.width = '100%';
+        container.style.height = '100%';
+
+        const labelContainer = document.createElement('div');
+        labelContainer.style.display = 'flex';
+        labelContainer.style.alignItems = 'center';
+        labelContainer.style.width = '100%';
+        labelContainer.style.justifyContent = 'space-between';
+
+        const label = document.createElement('span');
+        label.textContent = `${timeOfDay}`;
+
+        const badgesWrapper = document.createElement('div');
+        badgesWrapper.style.display = 'flex';
+        badgesWrapper.style.gap = '4px';
+
+        const officeBadge = document.createElement('span');
+        officeBadge.classList.add('badge', 'badge-office-calendar');
+        officeBadge.textContent = `In Office: ${officeCount}`;
+
+        badgesWrapper.appendChild(officeBadge);
+
+        if (!smallScreen) {
+          const wfhBadge = document.createElement('span');
+          wfhBadge.classList.add('badge', 'badge-wfh-calendar');
+          wfhBadge.textContent = `WFH: ${totalStaff - officeCount}`;
+          badgesWrapper.appendChild(wfhBadge);
+        }
+
+        labelContainer.appendChild(label);
+        labelContainer.appendChild(badgesWrapper);
+
+        container.appendChild(labelContainer);
+
+        return { domNodes: [container] };
       }
+      return null;
+    },
+    eventDidMount: function(info) {
+      const bgColor = info.event.backgroundColor.toUpperCase();
+      const yellowHex = '#FFD93D';
 
-      container.style.borderRadius = '4px';
-      container.style.margin = '1px 0';
-      container.style.padding = '2px 4px';
-      container.style.fontSize = '0.8em';
-      container.style.width = '100%';
-      container.style.height = '100%';
+      if (bgColor === yellowHex) {
+        info.el.style.color = '#000000';
 
-      // Create a wrapper for the label and badges
-      const labelContainer = document.createElement('div');
-      labelContainer.style.display = 'flex';
-      labelContainer.style.alignItems = 'center';
-      labelContainer.style.width = '100%';
-      labelContainer.style.justifyContent = 'space-between';
+        const elements = info.el.querySelectorAll('*');
+        elements.forEach(el => {
+          el.style.color = 'inherit';
+        });
+      } else {
+        info.el.style.color = '#ffffff';
 
-      const label = document.createElement('span');
-      label.textContent = `${timeOfDay}`;
-
-      const badgesWrapper = document.createElement('div');
-      badgesWrapper.style.display = 'flex';
-      badgesWrapper.style.gap = '4px';
-
-      // Create Office Badge
-      const officeBadge = document.createElement('span');
-      officeBadge.classList.add('badge', 'badge-office-calendar');
-      officeBadge.textContent = `In Office: ${officeCount}`;
-
-      // Create WFH Badge
-      const wfhBadge = document.createElement('span');
-      wfhBadge.classList.add('badge', 'badge-wfh-calendar');
-      wfhBadge.textContent = `WFH: ${totalStaff - officeCount}`;
-
-      badgesWrapper.appendChild(officeBadge);
-      badgesWrapper.appendChild(wfhBadge);
-
-      labelContainer.appendChild(label);
-      labelContainer.appendChild(badgesWrapper);
-
-      container.appendChild(labelContainer);
-
-      return { domNodes: [container] };
-    }
-    return null;
-  },
-  eventDidMount: function(info) {
-    // This function is called after the event has been rendered
-
-    // Ensure the container has the correct text color based on background
-    const bgColor = info.event.backgroundColor.toUpperCase();
-    const yellowHex = '#FFD93D';
-
-    if (bgColor === yellowHex) {
-      // Set text color to black
-      info.el.style.color = '#000000';
-
-      // Additionally, set all child elements to inherit the color
-      // This ensures badges and other texts also become black
-      const elements = info.el.querySelectorAll('*');
-      elements.forEach(el => {
-        // Override any inline styles that set color
-        el.style.color = 'inherit';
-      });
-    } else {
-      // Default text color (you can adjust this as needed)
-      info.el.style.color = '#ffffff';
-
-      const elements = info.el.querySelectorAll('*');
-      elements.forEach(el => {
-        el.style.color = 'inherit';
-      });
-    }
-  },
-  eventClassNames: 'calendar-event',
-  slotMinTime: '09:00:00',
-  slotMaxTime: '19:00:00',
-  businessHours: {
-    startTime: '09:00',
-    endTime: '19:00',
-    daysOfWeek: [1, 2, 3, 4, 5],
-  },
-}));
+        const elements = info.el.querySelectorAll('*');
+        elements.forEach(el => {
+          el.style.color = 'inherit';
+        });
+      }
+    },
+    eventClassNames: 'calendar-event',
+    slotMinTime: '09:00:00',
+    slotMaxTime: '19:00:00',
+    businessHours: {
+      startTime: '09:00',
+      endTime: '19:00',
+      daysOfWeek: [1, 2, 3, 4, 5],
+    },
+  };
+});
 
 async function handleDateClick(info) {
   if (info.view.type === 'dayGridMonth') {
@@ -328,6 +383,7 @@ async function handleDateClick(info) {
       alert('You cannot select a date beyond three months ahead.');
     } else {
       selectedDate.value = info.dateStr;
+      activeTab.value = 'AM';
       if (user.value.role === 2) {
         await displayDateDetails(info.dateStr);
       }
@@ -341,6 +397,7 @@ async function handleEventClick(info) {
     const viewType = info.view.type;
     if (viewType === 'timeGridWeek' || viewType === 'timeGridDay') {
       selectedDate.value = dateStr;
+      activeTab.value = 'AM';
       await displayDateDetails(dateStr);
     }
   }
@@ -350,6 +407,7 @@ async function handleDatesSet(info) {
   if (info.view.type === 'timeGridDay') {
     const dateStr = getDateStr(info.start);
     selectedDate.value = dateStr;
+    activeTab.value = 'AM';
     if (user.value.role === 2) {
       const detailData = await fetchStaffScheduleDetail(dateStr);
       if (detailData) {
@@ -404,11 +462,11 @@ async function handleDatesSet(info) {
         groupedData.PM.total = detailData.staff.length;
 
         selectedDateDetails.value = groupedData;
-        // Only show the card on large screens when navigating dates
+        expandedTeams.value = {}; // Reset expanded teams
+
         if (!isSmallScreen.value) {
           isRightContainerVisible.value = true;
         }
-        // On small screens, do not automatically show the card when navigating
       } else {
         alert('Error fetching details for the selected date.');
       }
@@ -470,7 +528,8 @@ async function displayDateDetails(dateStr) {
     groupedData.PM.total = detailData.staff.length;
 
     selectedDateDetails.value = groupedData;
-    // Show the card
+    expandedTeams.value = {}; // Reset expanded teams
+
     isRightContainerVisible.value = true;
   } else {
     alert('Error fetching details for the selected date.');
@@ -490,37 +549,40 @@ async function fetchStaffScheduleDetail(dateStr) {
 async function initiateChunkedSummaryLoading() {
   isLoading.value = true;
   const today = new Date();
-  // Define the date ranges for current month and surrounding months
+
   const ranges = [];
-  // Current month
+
   const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
   const currentMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
   ranges.push({ start: new Date(currentMonthStart), end: new Date(currentMonthEnd) });
-  // Months before current month (2 months)
+
   for (let i = 1; i <= 2; i++) {
     const start = new Date(today.getFullYear(), today.getMonth() - i, 1);
     const end = new Date(today.getFullYear(), today.getMonth() - i + 1, 0);
     ranges.push({ start, end });
   }
-  // Months after current month (3 months)
+
   for (let i = 1; i <= 3; i++) {
     const start = new Date(today.getFullYear(), today.getMonth() + i, 1);
     const end = new Date(today.getFullYear(), today.getMonth() + i + 1, 0);
     ranges.push({ start, end });
   }
-  // Function to load each range sequentially
+
   for (let i = 0; i < ranges.length; i++) {
-    // For the first range (current month), load immediately
-    // For others, load in the background with a slight delay
     if (i === 0) {
       await fetchManagerScheduleSummary(ranges[i].start, ranges[i].end);
     } else {
       setTimeout(async () => {
         await fetchManagerScheduleSummary(ranges[i].start, ranges[i].end);
-      }, i * 1000); // 1-second interval between requests
+      }, i * 1000);
     }
   }
   isLoading.value = false;
+}
+
+function toggleTeam(timeOfDay, teamName) {
+  const key = `${timeOfDay}-${teamName}`;
+  expandedTeams.value[key] = !expandedTeams.value[key];
 }
 </script>
 
@@ -549,14 +611,15 @@ async function initiateChunkedSummaryLoading() {
 
 .right-container {
   width: 30%;
-  padding: 1rem;
-  background-color: #ffffff;
+  padding: 1.5rem;
+  background-color: #f4f6f8;
   border-left: 1px solid #dfe3e8;
   overflow-y: auto;
   flex: none;
   min-width: 300px;
   height: 100%;
   position: relative;
+  transition: transform 0.3s ease-in-out;
 }
 
 .right-container.show {
@@ -572,52 +635,117 @@ async function initiateChunkedSummaryLoading() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .details-header h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   color: #2e3a59;
 }
 
-/* Hide the close button on larger screens */
 .close-button {
   background: none;
   border: none;
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   cursor: pointer;
   color: #888;
-  display: none; /* Hidden by default */
 }
 
-/* Display the close button only on small screens */
-@media (max-width: 768px) {
-  .close-button {
-    display: block;
-  }
+.tabs {
+  display: flex;
+  margin-bottom: 1rem;
 }
 
-.time-slot {
-  margin-bottom: 1em;
+.tab {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  background-color: #e0e7ff;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  color: #141b4d;
+  transition: background-color 0.3s ease;
 }
 
-.time-label {
-  font-weight: bold;
-  margin-right: 0.5em;
+.tab:not(:last-child) {
+  border-right: 1px solid #c7d2fe;
+}
+
+.tab.active {
+  background-color: #141b4d;
+  color: #ffffff;
+}
+
+.tab:hover {
+  background-color: #c7d2fe;
+}
+
+.tab-content {
+  flex: 1;
+}
+
+.summary {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+}
+
+.summary-label {
+  font-weight: 600;
+  margin-right: 0.5rem;
+  color: #2e3a59;
+}
+
+.summary-value {
+  font-weight: 500;
+  color: #141b4d;
+}
+
+.teams {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.team {
+  background-color: #ffffff;
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+}
+
+.team-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.team-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #2e3a59;
 }
 
 .badge-container {
   display: flex;
-  gap: 0.5em;
+  gap: 0.5rem;
 }
 
 .badge {
   display: inline-block;
-  padding: 0.25em 0.75em;
+  padding: 0.25rem 0.75rem;
   border-radius: 12px;
   font-size: 0.85em;
-  color: #ffffff; /* Default text color */
+  color: #ffffff;
 }
 
 .badge-office {
@@ -629,57 +757,10 @@ async function initiateChunkedSummaryLoading() {
   color: #000000; /* Black text for better visibility */
 }
 
-.badge-office-calendar {
-  background-color: #6BCB77; /* Green */
-  color: #ffffff;
-  font-size: 0.7em;
-  padding: 2px 4px;
-  border-radius: 8px;
-}
-
-.badge-wfh-calendar {
-  background-color: #FFD93D; /* Yellow */
-  color: #000000; /* Black text for better visibility */
-  font-size: 0.7em;
-  padding: 2px 4px;
-  border-radius: 8px;
-}
-
-.teams {
-  margin-left: 0.5em;
-}
-
-.team {
-  margin-bottom: 0.5em;
-  border: 1px solid #dfe3e8;
-  border-radius: 8px;
-  padding: 0.5em;
-  background-color: #f9fafb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.team details summary {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: bold;
-  cursor: pointer;
-  color: #2e3a59;
-}
-
-.team details[open] summary {
-  border-bottom: 1px solid #dfe3e8;
-  margin-bottom: 0.5em;
-}
-
-.team .badge {
-  margin-left: 0.5em;
-}
-
 .staff-list {
   display: flex;
   flex-direction: column;
-  margin-top: 0.5em;
+  gap: 0.5rem;
 }
 
 .staff-card {
@@ -687,51 +768,43 @@ async function initiateChunkedSummaryLoading() {
   align-items: center;
   border: 1px solid #dfe3e8;
   border-radius: 6px;
-  padding: 0.5em;
-  margin-bottom: 0.5em;
-  background-color: #ffffff;
+  padding: 0.5rem 0.75rem;
+  background-color: #f9fafb;
 }
 
-.staff-card .status-indicator {
+.status-indicator {
   display: inline-block;
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  margin-right: 0.5em;
+  margin-right: 0.75rem;
 }
 
-.staff-card .status-indicator.green {
+.status-indicator.green {
   background-color: #6BCB77;
 }
 
-.staff-card .status-indicator.yellow {
+.status-indicator.yellow {
   background-color: #FFD93D;
 }
 
-.staff-card .staff-name {
+.staff-name {
   font-weight: 500;
   color: #2e3a59;
-}
+  font-size: 0.8rem;
 
-.right-container details {
-  margin: 0.5em 0;
-}
-
-.right-container summary {
-  font-weight: bold;
-  cursor: pointer;
-  color: #2e3a59;
-}
-
-.fc {
-  width: 100%;
-  height: 100%;
 }
 
 .no-selection {
   text-align: center;
   color: #888;
   margin-top: 2rem;
+  font-size: 1.1rem;
+}
+
+.fc {
+  width: 100%;
+  height: 100%;
 }
 
 .fc-event-main {
@@ -781,17 +854,17 @@ async function initiateChunkedSummaryLoading() {
   }
 
   .right-container {
-    position: fixed; /* Change to fixed for overlay */
+    position: fixed;
     top: 0;
     right: 0;
     bottom: 0;
     left: 0;
-    background-color: rgba(255, 255, 255, 0.95); /* Semi-transparent background */
+    background-color: rgba(255, 255, 255, 0.95);
     transform: translateX(100%);
     transition: transform 0.3s ease-in-out;
     z-index: 1000;
     overflow-y: auto;
-    padding: 1rem;
+    padding: 1.5rem;
   }
 
   .right-container.show {
@@ -813,7 +886,7 @@ async function initiateChunkedSummaryLoading() {
     width: 100%;
     min-width: unset;
     height: auto;
-    position: fixed; /* Ensure it overlays */
+    position: fixed;
     right: 0;
     top: 0;
     box-shadow: none;
@@ -829,6 +902,11 @@ async function initiateChunkedSummaryLoading() {
     display: flex;
     justify-content: space-between;
     align-items: center;
+  }
+
+  .tabs {
+    flex-direction: row;
+    justify-content: space-between;
   }
 }
 
@@ -859,6 +937,7 @@ async function initiateChunkedSummaryLoading() {
   align-items: center;
   z-index: 10;
 }
+
 .spinner {
   border: 8px solid #f3f3f3; /* Light grey */
   border-top: 8px solid #3498db; /* Blue */
@@ -867,8 +946,18 @@ async function initiateChunkedSummaryLoading() {
   height: 60px;
   animation: spin 2s linear infinite;
 }
+
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* Indicate that team cards are clickable */
+.team.card {
+  transition: background-color 0.2s ease;
+}
+
+.team.card:hover {
+  background-color: #f0f4ff;
 }
 </style>

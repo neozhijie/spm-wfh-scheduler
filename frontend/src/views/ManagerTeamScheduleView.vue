@@ -15,44 +15,106 @@
           <div v-if="selectedDateDetails" class="details-container">
             <div class="details-header">
               <h2>Details for {{ selectedDate }}</h2>
-              <!-- Close button is always rendered but hidden on larger screens via CSS -->
-              <button class="close-button" @click="isRightContainerVisible = false">×</button>
+              <!-- Close button is only rendered for small screens -->
+              <button 
+                v-if="isSmallScreen" 
+                class="close-button" 
+                @click="isRightContainerVisible = false"
+              >
+                ×
+              </button>
             </div>
-            <div class="time-slot card" v-for="(slot, key) in selectedDateDetails" :key="key">
-              <details open>
-                <summary>
-                  <span class="time-label">{{ key }}</span>
-                  <div class="badge-container">
-                    <span class="badge badge-office">
-                      In Office ({{ slot.inOffice }}/{{ slot.total }})
-                    </span>
-                    <span class="badge badge-wfh">
-                      WFH ({{ slot.wfh }}/{{ slot.total }})
-                    </span>
+            <div class="tabs">
+              <button 
+                :class="['tab', activeTab === 'AM' ? 'active' : '']" 
+                @click="activeTab = 'AM'"
+              >
+                AM
+              </button>
+              <button 
+                :class="['tab', activeTab === 'PM' ? 'active' : '']" 
+                @click="activeTab = 'PM'"
+              >
+                PM
+              </button>
+            </div>
+            <div class="tab-content">
+              <div v-if="activeTab === 'AM'">
+                <div class="summary">
+                  <div class="summary-item">
+                    <span class="summary-label">In Office:</span>
+                    <span class="summary-value">{{ selectedDateDetails.AM.inOffice }} / {{ selectedDateDetails.AM.total }}</span>
                   </div>
-                </summary>
+                  <div class="summary-item">
+                    <span class="summary-label">WFH:</span>
+                    <span class="summary-value">{{ selectedDateDetails.AM.wfh }} / {{ selectedDateDetails.AM.total }}</span>
+                  </div>
+                </div>
                 <div class="teams">
-                  <div class="team card" v-for="team in slot.teams" :key="team.teamName">
-                    <details>
-                      <summary>
-                        {{ team.teamName }}
+                  <div 
+                    class="team card" 
+                    v-for="team in selectedDateDetails.AM.teams" 
+                    :key="team.teamName"
+                    @click="toggleTeam('AM', team.teamName)"
+                  >
+                    <div class="team-header">
+                      <h3>{{ team.teamName }}</h3>
+                      <div class="badge-container">
                         <span class="badge badge-office">
                           In Office: {{ team.inOffice }}/{{ team.total }}
                         </span>
                         <span class="badge badge-wfh">
                           WFH: {{ team.wfh }}/{{ team.total }}
                         </span>
-                      </summary>
-                      <div class="staff-list">
-                        <div class="staff-card" v-for="staff in team.staff" :key="staff.staff_id">
-                          <span :class="['status-indicator', staff.status === 'OFFICE' ? 'green' : 'yellow']"></span>
-                          <span class="staff-name">{{ staff.name }}</span>
-                        </div>
                       </div>
-                    </details>
+                    </div>
+                    <div class="staff-list" v-if="expandedTeams['AM-' + team.teamName]">
+                      <div class="staff-card" v-for="staff in team.staff" :key="staff.staff_id">
+                        <span :class="['status-indicator', staff.status === 'OFFICE' ? 'green' : 'yellow']"></span>
+                        <span class="staff-name">{{ staff.name }}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </details>
+              </div>
+              <div v-else-if="activeTab === 'PM'">
+                <div class="summary">
+                  <div class="summary-item">
+                    <span class="summary-label">In Office:</span>
+                    <span class="summary-value">{{ selectedDateDetails.PM.inOffice }} / {{ selectedDateDetails.PM.total }}</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">WFH:</span>
+                    <span class="summary-value">{{ selectedDateDetails.PM.wfh }} / {{ selectedDateDetails.PM.total }}</span>
+                  </div>
+                </div>
+                <div class="teams">
+                  <div 
+                    class="team card" 
+                    v-for="team in selectedDateDetails.PM.teams" 
+                    :key="team.teamName"
+                    @click="toggleTeam('PM', team.teamName)"
+                  >
+                    <div class="team-header">
+                      <h3>{{ team.teamName }}</h3>
+                      <div class="badge-container">
+                        <span class="badge badge-office">
+                          In Office: {{ team.inOffice }}/{{ team.total }}
+                        </span>
+                        <span class="badge badge-wfh">
+                          WFH: {{ team.wfh }}/{{ team.total }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="staff-list" v-if="expandedTeams['PM-' + team.teamName]">
+                      <div class="staff-card" v-for="staff in team.staff" :key="staff.staff_id">
+                        <span :class="['status-indicator', staff.status === 'OFFICE' ? 'green' : 'yellow']"></span>
+                        <span class="staff-name">{{ staff.name }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <div v-else class="no-selection">
@@ -63,6 +125,7 @@
     </div>
   </div>
 </template>
+
 <script setup>
 import { ref, onMounted, computed, onUnmounted } from 'vue';
 import Navbar from '@/components/Navbar.vue';
@@ -72,6 +135,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import axios from 'axios';
 
+// Reactive references
 const user = ref({});
 const selectedDate = ref('');
 const events = ref([]);
@@ -79,7 +143,10 @@ const selectedDateDetails = ref(null);
 const isRightContainerVisible = ref(false);
 const isSmallScreen = ref(window.innerWidth < 768); // Reactive property for screen size
 const isLoading = ref(false); // Loading indicator for summary loading
+const activeTab = ref('AM'); // Active tab state
+const expandedTeams = ref({}); // Tracks expanded state of team cards
 
+// Handle window resize to update isSmallScreen
 const handleResize = () => {
   isSmallScreen.value = window.innerWidth < 768;
 };
@@ -99,20 +166,20 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
 });
 
+// Compute minimum and maximum selectable dates
 const computeMinDate = computed(() => {
   const date = new Date();
   date.setMonth(date.getMonth() - 2);
-  date.setDate(date.getDate()); // Set to same day of the month
   return date;
 });
 
 const computeMaxDate = computed(() => {
   const date = new Date();
   date.setMonth(date.getMonth() + 3);
-  date.setDate(date.getDate()); // Set to same day of the month
   return date;
 });
 
+// Determine color based on percentage
 function getColorForPercentage(percentage) {
   percentage = parseFloat(percentage);
   if (percentage < 50) {
@@ -124,6 +191,7 @@ function getColorForPercentage(percentage) {
   }
 }
 
+// Fetch summary data for a given date range
 async function fetchManagerScheduleSummary(start, end) {
   try {
     const startDateStr = start.toISOString().split('T')[0];
@@ -188,14 +256,15 @@ async function fetchManagerScheduleSummary(start, end) {
   }
 }
 
+// Format date to YYYY-MM-DD
 function getDateStr(dateObj) {
-  // Ensure the date is formatted correctly using local timezone
   const year = dateObj.getFullYear();
   const month = ('0' + (dateObj.getMonth() + 1)).slice(-2);
   const day = ('0' + dateObj.getDate()).slice(-2);
   return `${year}-${month}-${day}`;
 }
 
+// Calendar options
 const calendarOptions = computed(() => {
   let smallScreen = isSmallScreen.value;
 
@@ -285,9 +354,7 @@ const calendarOptions = computed(() => {
       return null;
     },
     eventDidMount: function(info) {
-      // This function is called after the event has been rendered
-
-      // Ensure the container has the correct text color based on background
+      // Adjust text color based on background
       const bgColor = info.event.backgroundColor.toUpperCase();
       const yellowHex = '#FFD93D';
 
@@ -295,15 +362,13 @@ const calendarOptions = computed(() => {
         // Set text color to black
         info.el.style.color = '#000000';
 
-        // Additionally, set all child elements to inherit the color
-        // This ensures badges and other texts also become black
+        // Ensure child elements inherit the color
         const elements = info.el.querySelectorAll('*');
         elements.forEach(el => {
-          // Override any inline styles that set color
           el.style.color = 'inherit';
         });
       } else {
-        // Default text color (you can adjust this as needed)
+        // Default text color
         info.el.style.color = '#ffffff';
 
         const elements = info.el.querySelectorAll('*');
@@ -323,6 +388,7 @@ const calendarOptions = computed(() => {
   };
 });
 
+// Handle date click on the calendar
 async function handleDateClick(info) {
   if (info.view.type === 'dayGridMonth') {
     const clickedDate = new Date(info.dateStr);
@@ -333,6 +399,7 @@ async function handleDateClick(info) {
       alert('You cannot select a date beyond three months ahead.');
     } else {
       selectedDate.value = info.dateStr;
+      activeTab.value = 'AM'; // Reset to AM tab on new selection
       if (user.value.role === 3) {
         await displayDateDetails(info.dateStr);
       }
@@ -340,21 +407,25 @@ async function handleDateClick(info) {
   }
 }
 
+// Handle event click on the calendar
 async function handleEventClick(info) {
   if (user.value.role === 3) {
     const dateStr = getDateStr(info.event.start);
     const viewType = info.view.type;
     if (viewType === 'timeGridWeek' || viewType === 'timeGridDay') {
       selectedDate.value = dateStr;
+      activeTab.value = 'AM'; // Reset to AM tab on new selection
       await displayDateDetails(dateStr);
     }
   }
 }
 
+// Handle when dates are set in the calendar view
 async function handleDatesSet(info) {
   if (info.view.type === 'timeGridDay') {
     const dateStr = getDateStr(info.start);
     selectedDate.value = dateStr;
+    activeTab.value = 'AM'; // Reset to AM tab on dates set
     if (user.value.role === 3) {
       const detailData = await fetchManagerScheduleDetail(dateStr);
       if (detailData) {
@@ -409,6 +480,8 @@ async function handleDatesSet(info) {
         groupedData.PM.total = detailData.staff.length;
 
         selectedDateDetails.value = groupedData;
+        expandedTeams.value = {}; // Reset expanded teams
+
         // Only show the card on large screens when navigating dates
         if (!isSmallScreen.value) {
           isRightContainerVisible.value = true;
@@ -421,6 +494,7 @@ async function handleDatesSet(info) {
   }
 }
 
+// Display date details when a date is selected
 async function displayDateDetails(dateStr) {
   const detailData = await fetchManagerScheduleDetail(dateStr);
   if (detailData) {
@@ -475,6 +549,8 @@ async function displayDateDetails(dateStr) {
     groupedData.PM.total = detailData.staff.length;
 
     selectedDateDetails.value = groupedData;
+    expandedTeams.value = {}; // Reset expanded teams
+
     // Show the card
     isRightContainerVisible.value = true;
   } else {
@@ -482,6 +558,7 @@ async function displayDateDetails(dateStr) {
   }
 }
 
+// Fetch manager schedule details for a specific date
 async function fetchManagerScheduleDetail(dateStr) {
   try {
     const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/manager-schedule-detail/${user.value.staff_id}/${dateStr}`);
@@ -492,6 +569,7 @@ async function fetchManagerScheduleDetail(dateStr) {
   }
 }
 
+// Initiate loading of summary data in chunks
 async function initiateChunkedSummaryLoading() {
   isLoading.value = true;
   const today = new Date();
@@ -534,7 +612,14 @@ async function initiateChunkedSummaryLoading() {
 
   isLoading.value = false;
 }
+
+// Toggle the expansion state of a team card
+function toggleTeam(timeOfDay, teamName) {
+  const key = `${timeOfDay}-${teamName}`;
+  expandedTeams.value[key] = !expandedTeams.value[key];
+}
 </script>
+
 <style scoped>
 .dashboard-container {
   display: flex;
@@ -560,14 +645,15 @@ async function initiateChunkedSummaryLoading() {
 
 .right-container {
   width: 30%;
-  padding: 1rem;
-  background-color: #ffffff;
+  padding: 1.5rem;
+  background-color: #f4f6f8;
   border-left: 1px solid #dfe3e8;
   overflow-y: auto;
   flex: none;
   min-width: 300px;
   height: 100%;
   position: relative;
+  transition: transform 0.3s ease-in-out;
 }
 
 .right-container.show {
@@ -583,52 +669,117 @@ async function initiateChunkedSummaryLoading() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .details-header h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   color: #2e3a59;
 }
 
-/* Hide the close button on larger screens */
 .close-button {
   background: none;
   border: none;
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   cursor: pointer;
   color: #888;
-  display: none; /* Hidden by default */
 }
 
-/* Display the close button only on small screens */
-@media (max-width: 768px) {
-  .close-button {
-    display: block;
-  }
+.tabs {
+  display: flex;
+  margin-bottom: 1rem;
 }
 
-.time-slot {
-  margin-bottom: 1em;
+.tab {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  background-color: #e0e7ff;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  color: #141b4d;
+  transition: background-color 0.3s ease;
 }
 
-.time-label {
-  font-weight: bold;
-  margin-right: 0.5em;
+.tab:not(:last-child) {
+  border-right: 1px solid #c7d2fe;
+}
+
+.tab.active {
+  background-color: #141b4d;
+  color: #ffffff;
+}
+
+.tab:hover {
+  background-color: #c7d2fe;
+}
+
+.tab-content {
+  flex: 1;
+}
+
+.summary {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+}
+
+.summary-label {
+  font-weight: 600;
+  margin-right: 0.5rem;
+  color: #2e3a59;
+}
+
+.summary-value {
+  font-weight: 500;
+  color: #141b4d;
+}
+
+.teams {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.team {
+  background-color: #ffffff;
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  cursor: pointer; /* Indicate that the card is clickable */
+}
+
+.team-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.team-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #2e3a59;
 }
 
 .badge-container {
   display: flex;
-  gap: 0.5em;
+  gap: 0.5rem;
 }
 
 .badge {
   display: inline-block;
-  padding: 0.25em 0.75em;
+  padding: 0.25rem 0.75rem;
   border-radius: 12px;
   font-size: 0.85em;
-  color: #ffffff; /* Default text color */
+  color: #ffffff;
 }
 
 .badge-office {
@@ -640,58 +791,10 @@ async function initiateChunkedSummaryLoading() {
   color: #000000; /* Black text for better visibility */
 }
 
-.badge-office-calendar {
-  background-color: #6BCB77; /* Green */
-  color: #ffffff;
-  font-size: 0.7em;
-  padding: 2px 4px;
-  border-radius: 8px;
-}
-
-.badge-wfh-calendar {
-  background-color: #FFD93D; /* Yellow */
-  color: #000000; /* Black text for better visibility */
-  font-size: 0.7em;
-  padding: 2px 4px;
-  border-radius: 8px;
-}
-
-.teams {
-  margin-left: 0.5em;
-}
-
-.card {
-  margin-bottom: 0.5em;
-  margin-top: 0.5em;
-  border: 1px solid #dfe3e8;
-  border-radius: 8px;
-  padding: 0.5em;
-  background-color: #f9fafb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.team details summary {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: bold;
-  cursor: pointer;
-  color: #2e3a59;
-}
-
-.team details[open] summary {
-  border-bottom: 1px solid #dfe3e8;
-  margin-bottom: 0.5em;
-}
-
-.team .badge {
-  margin-left: 0.5em;
-}
-
 .staff-list {
   display: flex;
   flex-direction: column;
-  margin-top: 0.5em;
+  gap: 0.5rem;
 }
 
 .staff-card {
@@ -699,51 +802,42 @@ async function initiateChunkedSummaryLoading() {
   align-items: center;
   border: 1px solid #dfe3e8;
   border-radius: 6px;
-  padding: 0.5em;
-  margin-bottom: 0.5em;
-  background-color: #ffffff;
+  padding: 0.5rem 0.75rem;
+  background-color: #f9fafb;
 }
 
-.staff-card .status-indicator {
+.status-indicator {
   display: inline-block;
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  margin-right: 0.5em;
+  margin-right: 0.75rem;
 }
 
-.staff-card .status-indicator.green {
+.status-indicator.green {
   background-color: #6BCB77;
 }
 
-.staff-card .status-indicator.yellow {
+.status-indicator.yellow {
   background-color: #FFD93D;
 }
 
-.staff-card .staff-name {
+.staff-name {
   font-weight: 500;
   color: #2e3a59;
-}
-
-.right-container details {
-  margin: 0.5em 0;
-}
-
-.right-container summary {
-  font-weight: bold;
-  cursor: pointer;
-  color: #2e3a59;
-}
-
-.fc {
-  width: 100%;
-  height: 100%;
+  font-size: 0.8rem;
 }
 
 .no-selection {
   text-align: center;
   color: #888;
   margin-top: 2rem;
+  font-size: 1.1rem;
+}
+
+.fc {
+  width: 100%;
+  height: 100%;
 }
 
 .fc-event-main {
@@ -803,7 +897,7 @@ async function initiateChunkedSummaryLoading() {
     transition: transform 0.3s ease-in-out;
     z-index: 1000;
     overflow-y: auto;
-    padding: 1rem;
+    padding: 1.5rem;
   }
 
   .right-container.show {
@@ -841,6 +935,11 @@ async function initiateChunkedSummaryLoading() {
     display: flex;
     justify-content: space-between;
     align-items: center;
+  }
+
+  .tabs {
+    flex-direction: row;
+    justify-content: space-between;
   }
 }
 
@@ -884,5 +983,14 @@ async function initiateChunkedSummaryLoading() {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* Indicate that team cards are clickable */
+.team.card {
+  transition: background-color 0.2s ease;
+}
+
+.team.card:hover {
+  background-color: #f0f4ff;
 }
 </style>

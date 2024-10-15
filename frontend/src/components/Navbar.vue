@@ -7,7 +7,6 @@
       </button>
       <div class="collapse navbar-collapse" id="navbarNavDropdown">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-
         </ul>
         <ul class="navbar-nav">
           <li class="nav-item">
@@ -19,7 +18,7 @@
           <li class="nav-item" v-if="user.role==2">
             <router-link class="nav-link" to="/teamschedule-staff">Team Schedule</router-link>
           </li>
-          <li class="nav-item"  v-if="user.role==2 ||user.role==3 ||user.dept=='HR'">
+          <li class="nav-item" v-if="user.role==2 || user.role==3 || user.dept=='HR'">
             <router-link class="nav-link" to="/application">Apply</router-link>
           </li>
           <li class="nav-item" v-if="user.position=='Director' || user.role==3 || user.position=='MD'">
@@ -30,6 +29,7 @@
               {{ user.fname }}
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuLink">
+              <li><a class="dropdown-item" href="#">{{ user.staff_fname }}</a></li>
               <li><a class="dropdown-item" href="#" @click="logout">Logout</a></li>
             </ul>
           </li>

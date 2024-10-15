@@ -2,10 +2,10 @@
   <div id="app">
     <Navbar />
     <div class="dashboard-container">
-      <div class="top-section">
+      <!-- <div class="top-section">
         <h1>Welcome to your Schedule Dashboard</h1>
         <p>You are logged in as {{ user.staff_fname }} {{ user.staff_lname }}</p>
-      </div>
+      </div> -->
 
       <div class="main-section">
         <div class="calendar-container">
@@ -80,42 +80,46 @@ async function fetchEvents(startDate, endDate) {
 
       if (wfhStatus === 'AM') {
         newEvents.push({
-          title: 'WFH AM',
+          title: 'WFH (AM)',
           start: `${eventDate}T09:00:00`,
-          end: `${eventDate}T13:00:00`
+          end: `${eventDate}T13:00:00`,
+          backgroundColor: '#FFD93D',
         });
       } else if (wfhStatus === 'PM') {
         newEvents.push({
-          title: 'WFH PM',
+          title: 'WFH (PM)',
           start: `${eventDate}T14:00:00`,
-          end: `${eventDate}T18:00:00`
+          end: `${eventDate}T18:00:00`,
+          backgroundColor: '#FFD93D',
         });
       } else if (wfhStatus === 'FullDay') {
         newEvents.push({
-          title: 'WFH Full Day',
+          title: 'WFH (Full Day)',
           start: `${eventDate}T09:00:00`,
-          end: `${eventDate}T18:00:00`
+          end: `${eventDate}T18:00:00`,
+          backgroundColor: '#FFD93D',
+          color: 'black'
         });
       } else if (wfhStatus === 'FullDayPending') {
         newEvents.push({
-          title: 'Pending WFH Full Day',
+          title: 'Pending WFH (Full Day)',
           start: `${eventDate}T09:00:00`,
           end: `${eventDate}T18:00:00`,
-          backgroundColor: '#FFA500'
+          backgroundColor: '#141b4d'
         });
       } else if (wfhStatus === 'AMPending') {
         newEvents.push({
-          title: 'Pending WFH AM',
+          title: 'Pending WFH (AM)',
           start: `${eventDate}T09:00:00`,
           end: `${eventDate}T13:00:00`,
-          backgroundColor: '#FFA500'
+          backgroundColor: '#141b4d'
         });
       } else if (wfhStatus === 'PMPending') {
         newEvents.push({
-          title: 'Pending WFH PM',
+          title: 'Pending WFH (PM)',
           start: `${eventDate}T14:00:00`,
           end: `${eventDate}T18:00:00`,
-          backgroundColor: '#FFA500'
+          backgroundColor: '#141b4d'
         });
       } 
     });
@@ -160,7 +164,12 @@ const calendarOptions = computed(() => ({
     title.textContent = arg.event.title;
     title.style.fontWeight = 'bold';
     title.style.fontSize = '12px';
-    title.style.color = 'white';
+    if (arg.event.backgroundColor === '#FFD93D') {
+      title.style.color = 'black';
+    } else {
+      title.style.color = 'white';
+    }
+
 
     container.appendChild(title);
 
@@ -244,7 +253,6 @@ async function initiateChunkedSummaryLoading() {
 </script>
 
 <style scoped>
-
 .dashboard-container {
   display: flex;
   flex-direction: column;
@@ -260,17 +268,20 @@ async function initiateChunkedSummaryLoading() {
   display: flex;
   justify-content: center;
   height: 100%;
+  position: relative; /* Add this to position the overlay correctly */
 }
 
 .calendar-container {
   width: 85%; 
   padding: 1rem;
+  position: relative; /* Add this to ensure the overlay is positioned relative to this container */
 }
 
 .fc {
   width: 100%;
   height: 100%;
 }
+
 .fc-daygrid-event {
   width: 100% !important;
   height: auto;
@@ -295,6 +306,7 @@ async function initiateChunkedSummaryLoading() {
   justify-content: center;
   align-items: center;
   z-index: 10;
+  pointer-events: none; /* Allow interactions with elements underneath */
 }
 
 .spinner {
@@ -311,3 +323,4 @@ async function initiateChunkedSummaryLoading() {
   100% { transform: rotate(360deg); }
 }
 </style>
+
