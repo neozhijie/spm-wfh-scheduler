@@ -343,6 +343,46 @@ class WFHControllerTestCase(unittest.TestCase):
         self.assertIn('message', data)
         self.assertIn('An error occurred', data['message'])
 
+    def test_personal_schedule_with_schedule(self):
+        staff_id = self.staff.staff_id
+        today = datetime.now().date()
+        schedule = WFHSchedule(
+            request_id=1,
+            staff_id=staff_id,
+            manager_id=self.manager.staff_id,
+            date=today,
+            duration='FULL_DAY',
+            status='APPROVED',
+            dept=self.staff.dept,
+            position=self.staff.position,
+        )
+        db.session.add(schedule)
+        db.session.commit()
+        response = self.client.get(f'/api/personal-schedule/{staff_id}') 
+        data = response.get_json()
+        self.assertEqual(response.status_code, 200)
+        date_str = today.isoformat()
+        date_data = next((item for item in data['dates'] if item['date'] == date_str), None)
+        self.assertIsNotNone(date_data)
+        self.assertEqual(len(date_data), 2) 
+        self.assertEqual(date_data["schedule"], "FullDay")
+
+    def test_personal_schedule_with_no_schedule(self):
+        staff_id = self.staff.staff_id
+        response = self.client.get(f'/api/personal-schedule/{staff_id}') 
+        data = response.get_json()
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(len(data['dates']) > 0)
+        for date_data in data['dates']:
+            self.assertEqual(len(date_data), 2) 
+            self.assertEqual(date_data['schedule'], '')
+
+    def test_personal_schedule_invalid_date_format(self):
+        staff_id = self.staff.staff_id
+        response = self.client.get(f'api/personal-schedule/{staff_id}?start_date=invalid&end_date=alsoinvalid')
+        self.assertEqual(response.status_code, 500)
+        data = response.get_json()
+        self.assertIn('An error occurred', data['message'])
 
 if __name__ == "__main__":
     unittest.main()

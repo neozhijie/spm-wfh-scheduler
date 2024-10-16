@@ -470,5 +470,56 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
         self.assertEqual(staff_data['status_am'], 'OFFICE')
         self.assertEqual(staff_data['status_pm'], 'WFH')
 
+    def test_get_personal_schedule_with_schedule(self):
+        today = datetime.now().date()
+        start_date = today + timedelta(days=5)
+        end_date = start_date + timedelta(days=1) 
+        staff_id=self.staff3.staff_id
+
+        schedule1 = WFHSchedule(
+            request_id=1,
+            staff_id=staff_id,
+            manager_id=self.staff2.staff_id,
+            date=start_date,
+            duration="FULL_DAY",
+            status="APPROVED",
+            dept=self.staff3.dept,
+            position=self.staff3.position,
+        )
+        schedule2 = WFHSchedule(
+            request_id=2,
+            staff_id=staff_id,
+            manager_id=self.staff2.staff_id,
+            date=start_date + timedelta(days=1),
+            duration="HALF_DAY_AM",
+            status="PENDING",
+            dept=self.staff3.dept,
+            position=self.staff3.position,
+        )
+        db.session.add_all([schedule1, schedule2])
+        db.session.commit()
+        result = WFHScheduleService.get_personal_schedule(staff_id, start_date, end_date)
+        expected_result = {
+            'dates': [
+                {'date': start_date.isoformat(), 'schedule': 'FullDay'},
+                {'date': (start_date + timedelta(days=1)).isoformat(), 'schedule': 'AMPending'},
+            ]
+        }
+        self.assertEqual(result, expected_result)
+
+    def test_get_personal_schedule_with_no_schedule(self):
+        today = datetime.now().date()
+        start_date = today + timedelta(days=5)
+        end_date = start_date + timedelta(days=1) 
+        staff_id=self.staff3.staff_id
+        result = WFHScheduleService.get_personal_schedule(staff_id, start_date, end_date)
+        expected_result = {
+            'dates': [
+                {'date': start_date.isoformat(), 'schedule': ''},
+                {'date': (start_date + timedelta(days=1)).isoformat(), 'schedule': ''},
+            ]
+        }
+        self.assertEqual(result, expected_result)
+
 if __name__ == "__main__":
     unittest.main()
