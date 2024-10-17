@@ -521,5 +521,70 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
         }
         self.assertEqual(result, expected_result)
 
+    def test_get_staff_schedule_summary_no_subordinates(self):
+        manager_id = 99  # Non-existent manager ID
+        start_date = datetime.now().date()
+        end_date = start_date + timedelta(days=5)
+        result = WFHScheduleService.get_staff_schedule_summary(manager_id, start_date, end_date)
+        self.assertEqual(result, {'dates': []})
+
+    def test_get_staff_schedule_summary_with_schedules(self):
+        manager_id = self.staff2.staff_id
+        start_date = datetime.now().date()
+        end_date = start_date + timedelta(days=5)
+
+        # Create approved schedules for the staff
+        schedule1 = WFHSchedule(
+            request_id=1,
+            staff_id=self.staff3.staff_id,
+            manager_id=manager_id,
+            date=start_date,
+            duration='FULL_DAY',
+            status='APPROVED',
+            dept=self.staff3.dept,
+            position=self.staff3.position,
+        )
+        schedule2 = WFHSchedule(
+            request_id=2,
+            staff_id=self.staff3.staff_id,
+            manager_id=manager_id,
+            date=start_date + timedelta(days=2),
+            duration='HALF_DAY_AM',
+            status='APPROVED',
+            dept=self.staff3.dept,
+            position=self.staff3.position,
+        )
+        schedule3 = WFHSchedule(
+            request_id=3,
+            staff_id=self.staff3.staff_id,
+            manager_id=manager_id,
+            date=start_date + timedelta(days=4),
+            duration='HALF_DAY_PM',
+            status='APPROVED',
+            dept=self.staff3.dept,
+            position=self.staff3.position,
+        )
+        db.session.add_all([schedule1, schedule2, schedule3])
+        db.session.commit()
+
+        result = WFHScheduleService.get_staff_schedule_summary(manager_id, start_date, end_date)
+        self.assertEqual(len(result['dates']), 6)
+
+        for date_data in result['dates']:
+            date = datetime.strptime(date_data['date'], '%Y-%m-%d').date()
+            if date == start_date:
+                self.assertEqual(date_data['wfh_count_am'], 1)
+                self.assertEqual(date_data['wfh_count_pm'], 1)
+            elif date == start_date + timedelta(days=2):
+                self.assertEqual(date_data['wfh_count_am'], 1)
+                self.assertEqual(date_data['wfh_count_pm'], 0)
+            elif date == start_date + timedelta(days=4):
+                self.assertEqual(date_data['wfh_count_am'], 0)
+                self.assertEqual(date_data['wfh_count_pm'], 1)
+            else:
+                self.assertEqual(date_data['wfh_count_am'], 0)
+                self.assertEqual(date_data['wfh_count_pm'], 0)
+
+
 if __name__ == "__main__":
     unittest.main()
