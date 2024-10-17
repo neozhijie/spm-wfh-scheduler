@@ -76,7 +76,7 @@ class WFHScheduleService:
     
     @staticmethod
     def get_manager_schedule_summary(manager_id, start_date, end_date):
-
+        
         manager = Staff.query.filter_by(staff_id=manager_id).first()
     
         if not manager or not manager.dept:
@@ -136,11 +136,14 @@ class WFHScheduleService:
 
     @staticmethod
     def get_manager_schedule_detail(manager_id, date):
-        department = Staff.query.filter_by(reporting_manager=manager_id).first().dept
-        if not department:
-        # Handle the case where no staff member is found
-            return {'date': date.isoformat(), 'staff': []}
-                
+        manager = Staff.query.filter_by(staff_id=manager_id).first()
+    
+        if not manager or not manager.dept:
+            # Handle the case where the manager does not exist or has no department
+            return {'date': date.isoformat(), 'staff': []} 
+
+        # Get the department of the existing manager
+        department = manager.dept
         staff_list = Staff.query.filter_by(dept=department, role = 2).all()
         staff_ids = [staff.staff_id for staff in staff_list]
         if not staff_ids:
