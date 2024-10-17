@@ -187,12 +187,12 @@ function getColorForPercentage(percentage) {
   }
 }
 
-async function fetchManagerScheduleSummary(start, end) {
+async function fetchStaffScheduleSummary(start, end) {
   try {
     const startDateStr = start.toISOString().split('T')[0];
     const endDateStr = end.toISOString().split('T')[0];
 
-    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/manager-schedule-summary/${user.value.reporting_manager}`, {
+    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/staff-schedule-summary/${user.value.reporting_manager}`, {
       params: {
         start_date: startDateStr,
         end_date: endDateStr
@@ -247,7 +247,7 @@ async function fetchManagerScheduleSummary(start, end) {
 
     events.value = [...events.value, ...newEvents];
   } catch (error) {
-    console.error('Error fetching manager schedule summary:', error);
+    console.error('Error fetching staff schedule summary:', error);
   }
 }
 
@@ -541,7 +541,7 @@ async function fetchStaffScheduleDetail(dateStr) {
     const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/staff-schedule-detail/${user.value.staff_id}/${dateStr}`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching manager schedule detail:', error);
+    console.error('Error fetching staff schedule detail:', error);
     return null;
   }
 }
@@ -570,10 +570,10 @@ async function initiateChunkedSummaryLoading() {
 
   for (let i = 0; i < ranges.length; i++) {
     if (i === 0) {
-      await fetchManagerScheduleSummary(ranges[i].start, ranges[i].end);
+      await fetchStaffScheduleSummary(ranges[i].start, ranges[i].end);
     } else {
       setTimeout(async () => {
-        await fetchManagerScheduleSummary(ranges[i].start, ranges[i].end);
+        await fetchStaffScheduleSummary(ranges[i].start, ranges[i].end);
       }, i * 1000);
     }
   }

@@ -76,7 +76,9 @@ class WFHScheduleService:
     
     @staticmethod
     def get_manager_schedule_summary(manager_id, start_date, end_date):
-        staff_list = Staff.query.filter_by(reporting_manager=manager_id).all()
+        department = Staff.query.filter_by(reporting_manager=manager_id).first().dept
+        # staff_list = Staff.query.filter_by(reporting_manager=manager_id).all()
+        staff_list = Staff.query.filter_by(dept=department, role = 2).all()
         staff_ids = [staff.staff_id for staff in staff_list]
         total_staff = len(staff_ids)
         if total_staff == 0:
@@ -127,10 +129,12 @@ class WFHScheduleService:
 
     @staticmethod
     def get_manager_schedule_detail(manager_id, date):
-        staff_list = Staff.query.filter_by(reporting_manager=manager_id).all()
+        department = Staff.query.filter_by(reporting_manager=manager_id).first().dept
+        staff_list = Staff.query.filter_by(dept=department, role = 2).all()
         staff_ids = [staff.staff_id for staff in staff_list]
         if not staff_ids:
             return {'date': date.isoformat(), 'staff': []}
+        print(staff_list)
 
         staff_status = {}
         for staff in staff_list:
@@ -208,6 +212,57 @@ class WFHScheduleService:
             dates_data.append({
                 'date': date_str,
                 'schedule': schedule,
+            })
+        return {'dates': dates_data}
+
+    @staticmethod
+    def get_staff_schedule_summary(manager_id, start_date, end_date):
+        staff_list = Staff.query.filter_by(reporting_manager=manager_id).all()
+        staff_ids = [staff.staff_id for staff in staff_list]
+        total_staff = len(staff_ids)
+        if total_staff == 0:
+            return {'dates': []}
+
+        date_list = []
+        current_date = start_date
+        while current_date <= end_date:
+            date_list.append(current_date)
+            current_date += timedelta(days=1)
+
+        dates_data = []
+        for d in date_list:
+            date_str = d.isoformat()
+
+            # Initialize counts
+            wfh_count_am = 0
+            wfh_count_pm = 0
+
+            # Get all approved schedules for the date
+            schedules = WFHSchedule.query.filter(
+                WFHSchedule.staff_id.in_(staff_ids),
+                WFHSchedule.date == d,
+                WFHSchedule.status == 'APPROVED'
+            ).all()
+
+            for sched in schedules:
+                if sched.duration == 'FULL_DAY':
+                    wfh_count_am += 1
+                    wfh_count_pm += 1
+                elif sched.duration == 'HALF_DAY_AM':
+                    wfh_count_am += 1
+                elif sched.duration == 'HALF_DAY_PM':
+                    wfh_count_pm += 1
+
+            office_count_am = total_staff - wfh_count_am
+            office_count_pm = total_staff - wfh_count_pm
+
+            dates_data.append({
+                'date': date_str,
+                'total_staff': total_staff,
+                'wfh_count_am': wfh_count_am,
+                'wfh_count_pm': wfh_count_pm,
+                'office_count_am': office_count_am,
+                'office_count_pm': office_count_pm
             })
         return {'dates': dates_data}
 
