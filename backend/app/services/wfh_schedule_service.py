@@ -85,7 +85,7 @@ class WFHScheduleService:
 
         # Get the department of the existing manager
         department = manager.dept
-        staff_list = Staff.query.filter_by(dept=department, role = 2).all()
+        staff_list = Staff.query.filter_by(dept=department, role = 2, reporting_manager= manager_id).all()
         staff_ids = [staff.staff_id for staff in staff_list]
         total_staff = len(staff_ids)
         # if total_staff == 0:
@@ -144,7 +144,7 @@ class WFHScheduleService:
 
         # Get the department of the existing manager
         department = manager.dept
-        staff_list = Staff.query.filter_by(dept=department, role = 2).all()
+        staff_list = Staff.query.filter_by(dept=department, role = 2, reporting_manager= manager_id).all()
         staff_ids = [staff.staff_id for staff in staff_list]
         if not staff_ids:
             return {'date': date.isoformat(), 'staff': []}
