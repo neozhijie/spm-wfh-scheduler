@@ -27,8 +27,13 @@ class WFHCheckService:
 
             # if department is same as the one applying, increase counter
             if m_id == manager_id:
-                if schedule.duration == duration or schedule.duration == "FULL_DAY":
+
+                if duration == "FULL_DAY":
                     applied_count += 1
+
+                else:
+                    if schedule.duration == duration or schedule.duration == "FULL_DAY":
+                        applied_count += 1
 
         # Calculate the percentage of staff working from home, if including this request
         wfh_percentage = (applied_count +1) / team_count
