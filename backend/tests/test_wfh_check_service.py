@@ -75,7 +75,7 @@ class WFHCheckServiceTestCase(unittest.TestCase):
     def test_check_team_count_below_threshold(self):
         # No one is scheduled to WFH
         date = datetime.now().date()
-        result = WFHCheckService.check_team_count(self.staff1.staff_id, date)
+        result = WFHCheckService.check_team_count(self.staff1.staff_id, date, "FULL_DAY")
         self.assertEqual(result, 'Success')  
 
     def test_check_team_count_above_threshold(self):
@@ -86,7 +86,7 @@ class WFHCheckServiceTestCase(unittest.TestCase):
         schedule1 = WFHSchedule(
             request_id=1,
             staff_id=self.staff1.staff_id,
-            manager_id=0,
+            manager_id=1,
             date=date,
             duration="FULL_DAY",
             status="APPROVED",
@@ -96,7 +96,7 @@ class WFHCheckServiceTestCase(unittest.TestCase):
         schedule2 = WFHSchedule(
             request_id=2,
             staff_id=self.staff2.staff_id,
-            manager_id=0,
+            manager_id=1,
             date=date,
             duration="FULL_DAY",
             status="APPROVED",
@@ -107,7 +107,7 @@ class WFHCheckServiceTestCase(unittest.TestCase):
         db.session.commit()
 
         # Check for another staff in the same department
-        result = WFHCheckService.check_team_count(self.staff1.staff_id, date)
+        result = WFHCheckService.check_team_count(self.staff1.staff_id, date, "FULL_DAY")
         self.assertEqual(result, 'Unable to apply due to max limit')
 
     def test_check_team_count_at_threshold(self):
@@ -127,10 +127,10 @@ class WFHCheckServiceTestCase(unittest.TestCase):
         db.session.add(schedule1)
         db.session.commit()
 
-        result = WFHCheckService.check_team_count(self.staff2.staff_id, date)
+        result = WFHCheckService.check_team_count(self.staff2.staff_id, date, "FULL_DAY")
         self.assertEqual(result, 'Success')
 
-    def test_check_team_count_no_staff_in_dept(self):
+    def test_check_team_count_no_staff_in_team(self):
         # Remove staff from department
         Staff.query.filter_by(staff_id=self.staff1.staff_id).delete()
         Staff.query.filter_by(staff_id=self.staff2.staff_id).delete()
@@ -141,7 +141,7 @@ class WFHCheckServiceTestCase(unittest.TestCase):
 
         with self.assertRaises(ValueError) as context:
             WFHCheckService.check_team_count(
-                self.staff1.staff_id, datetime.now().date()
+                self.staff1.staff_id, datetime.now().date(), "FULL_DAY"
             )
         self.assertEqual(str(context.exception), "No staff found with id: 1")
 

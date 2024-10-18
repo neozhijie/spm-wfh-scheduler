@@ -228,7 +228,7 @@ class WFHControllerTestCase(unittest.TestCase):
         self.assertIn("Updated 1 requests to 'REJECTED'.", resp_data["message"])
 
     def test_check_wfh_count(self):
-        data = {"staff_id": self.staff.staff_id, "date": self.future_date}
+        data = {"staff_id": self.staff.staff_id, "date": self.future_date, "duration" : "FULL_DAY"}
         response = self.client.post(
             "/api/check-wfh-count",
             data=json.dumps(data),

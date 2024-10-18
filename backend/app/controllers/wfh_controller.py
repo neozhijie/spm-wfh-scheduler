@@ -156,7 +156,7 @@ def update_wfh_request():
             violated_dates = []
             # Check WFH policy for each date
             for date_to_check in dates_to_check:
-                result = WFHCheckService.check_team_count(staff_id, date_to_check)
+                result = WFHCheckService.check_team_count(staff_id, date_to_check,request_obj.duration)
                 if result != 'Success':
                     violated_dates.append(date_to_check)
             
@@ -216,11 +216,12 @@ def check_wfh_count():
     data = request.get_json()
     staff_id = data['staff_id']
     date = data['date']
+    duration = data['duration']
     
     try:
-        result = WFHCheckService.check_team_count(staff_id, date)
+        result = WFHCheckService.check_team_count(staff_id, date, duration)
         return('done')
-        print('done')
+    
     except Exception as e:
         db.session.rollback()  # Rollback the session in case of an error
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
