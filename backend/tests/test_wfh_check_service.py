@@ -16,7 +16,7 @@ class WFHCheckServiceTestCase(unittest.TestCase):
         db.create_all()
 
         # Create departments
-        self.dept1 = "Engineering"
+        self.reporting_manager = "Engineering"
         self.dept2 = "Human Resources"
 
         # Create staff members
@@ -24,11 +24,11 @@ class WFHCheckServiceTestCase(unittest.TestCase):
             staff_id=1,
             staff_fname="Alice",
             staff_lname="Engineer1",
-            dept=self.dept1,
+            dept=self.reporting_manager,
             position="Engineer",
             country="CountryA",
             email="alice@company.com",
-            reporting_manager=None,
+            reporting_manager=1,
             role=2,
             password="password1",
         )
@@ -36,11 +36,11 @@ class WFHCheckServiceTestCase(unittest.TestCase):
             staff_id=2,
             staff_fname="Bob",
             staff_lname="Engineer2",
-            dept=self.dept1,
+            dept=self.reporting_manager,
             position="Engineer",
             country="CountryA",
             email="bob@company.com",
-            reporting_manager=None,
+            reporting_manager=1,
             role=2,
             password="password2",
         )
@@ -52,7 +52,7 @@ class WFHCheckServiceTestCase(unittest.TestCase):
             position="HR Manager",
             country="CountryA",
             email="charlie@company.com",
-            reporting_manager=None,
+            reporting_manager=2,
             role=2,
             password="password3",
         )
@@ -65,20 +65,20 @@ class WFHCheckServiceTestCase(unittest.TestCase):
         db.drop_all()
         self.app_context.pop()
 
-    def test_department_count(self):
-        count = WFHCheckService.department_count(self.dept1)
+    def test_team_count(self):
+        count = WFHCheckService.team_count(self.staff1.reporting_manager)
         self.assertEqual(count, 2)
 
-        count = WFHCheckService.department_count(self.dept2)
+        count = WFHCheckService.team_count(self.staff3.reporting_manager)
         self.assertEqual(count, 1)
 
-    def test_check_department_count_below_threshold(self):
+    def test_check_team_count_below_threshold(self):
         # No one is scheduled to WFH
         date = datetime.now().date()
-        result = WFHCheckService.check_department_count(self.staff1.staff_id, date)
+        result = WFHCheckService.check_team_count(self.staff1.staff_id, date)
         self.assertEqual(result, 'Success')  
 
-    def test_check_department_count_above_threshold(self):
+    def test_check_team_count_above_threshold(self):
         # Schedule more than 50% staff to WFH
         date = datetime.now().date()
 
@@ -107,10 +107,10 @@ class WFHCheckServiceTestCase(unittest.TestCase):
         db.session.commit()
 
         # Check for another staff in the same department
-        result = WFHCheckService.check_department_count(self.staff1.staff_id, date)
+        result = WFHCheckService.check_team_count(self.staff1.staff_id, date)
         self.assertEqual(result, 'Unable to apply due to max limit')
 
-    def test_check_department_count_at_threshold(self):
+    def test_check_team_count_at_threshold(self):
         # Schedule 50% staff to WFH
         date = datetime.now().date()
 
@@ -127,28 +127,28 @@ class WFHCheckServiceTestCase(unittest.TestCase):
         db.session.add(schedule1)
         db.session.commit()
 
-        result = WFHCheckService.check_department_count(self.staff2.staff_id, date)
+        result = WFHCheckService.check_team_count(self.staff2.staff_id, date)
         self.assertEqual(result, 'Success')
 
-    def test_check_department_count_no_staff_in_dept(self):
+    def test_check_team_count_no_staff_in_dept(self):
         # Remove staff from department
         Staff.query.filter_by(staff_id=self.staff1.staff_id).delete()
         Staff.query.filter_by(staff_id=self.staff2.staff_id).delete()
         db.session.commit()
 
-        count = WFHCheckService.department_count(self.dept1)
+        count = WFHCheckService.team_count(self.reporting_manager)
         self.assertEqual(count, 0)
 
         with self.assertRaises(ValueError) as context:
-            WFHCheckService.check_department_count(
+            WFHCheckService.check_team_count(
                 self.staff1.staff_id, datetime.now().date()
             )
         self.assertEqual(str(context.exception), "No staff found with id: 1")
 
-    def test_check_department_count_2_staff_in_dept(self):
+    def test_check_team_count_2_staff_in_dept(self):
         # Remove staff from department
      
-        count = WFHCheckService.department_count(self.dept1)
+        count = WFHCheckService.team_count(1)
         self.assertEqual(count, 2)
 
 

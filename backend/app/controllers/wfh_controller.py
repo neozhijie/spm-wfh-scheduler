@@ -156,7 +156,7 @@ def update_wfh_request():
             violated_dates = []
             # Check WFH policy for each date
             for date_to_check in dates_to_check:
-                result = WFHCheckService.check_department_count(staff_id, date_to_check)
+                result = WFHCheckService.check_team_count(staff_id, date_to_check)
                 if result != 'Success':
                     violated_dates.append(date_to_check)
             
@@ -218,7 +218,7 @@ def check_wfh_count():
     date = data['date']
     
     try:
-        result = WFHCheckService.check_department_count(staff_id, date)
+        result = WFHCheckService.check_team_count(staff_id, date)
         return('done')
         print('done')
     except Exception as e:

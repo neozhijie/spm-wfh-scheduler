@@ -38,7 +38,7 @@ class WFHControllerTestCase(unittest.TestCase):
             position="Manager",
             country="CountryA",
             email="jane.smith@example.com",
-            reporting_manager=None,
+            reporting_manager=2,
             role=3,
             password="password456",
         )
