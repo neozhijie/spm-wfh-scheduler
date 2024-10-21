@@ -5,6 +5,7 @@ import RequestView from '@/views/RequestView.vue'
 import ApplicationView from '@/views/ApplicationView.vue'
 import ManagerScheduleView from '@/views/ManagerTeamScheduleView.vue'
 import TeamScheduleView from '@/views/StaffTeamScheduleView.vue'
+import HRScheduleView from '@/views/HRScheduleView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -42,6 +43,12 @@ const router = createRouter({
       path: '/application',
       name: 'application',
       component: ApplicationView,
+      meta: {requiresAuth: true}
+    },
+    {
+      path: '/wholeschedule-hr',
+      name: 'wholeschedule',
+      component: HRScheduleView,
       meta: {requiresAuth: true}
     },
     // ... other routes ...
