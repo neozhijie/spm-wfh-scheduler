@@ -415,13 +415,13 @@ async function handleDatesSet(info) {
           AM: {
             inOffice: 0,
             wfh: 0,
-            total: detailData.staff.length,
+            total: detailData.staff.length - 1,
             teams: {}
           },
           PM: {
             inOffice: 0,
             wfh: 0,
-            total: detailData.staff.length,
+            total: detailData.staff.length - 1,
             teams: {}
           }
         };
@@ -433,33 +433,35 @@ async function handleDatesSet(info) {
           if (!groupedData.AM.teams[position]) {
             groupedData.AM.teams[position] = { teamName: position, inOffice: 0, wfh: 0, total: 0, staff: [] };
           }
-          groupedData.AM.teams[position].total += 1;
-          if (staff.status_am === 'OFFICE') {
-            groupedData.AM.teams[position].inOffice += 1;
-            groupedData.AM.inOffice += 1;
-          } else {
-            groupedData.AM.teams[position].wfh += 1;
-            groupedData.AM.wfh += 1;
+          if (staff.staff_id != user.value.staff_id){
+            groupedData.AM.teams[position].total += 1;
+            if (staff.status_am === 'OFFICE') {
+              groupedData.AM.teams[position].inOffice += 1;
+              groupedData.AM.inOffice += 1;
+            } else {
+              groupedData.AM.teams[position].wfh += 1;
+              groupedData.AM.wfh += 1;
+            }
+            groupedData.AM.teams[position].staff.push({ staff_id: staff.staff_id, name: staff.name, status: staff.status_am });
           }
-          groupedData.AM.teams[position].staff.push({ staff_id: staff.staff_id, name: staff.name, status: staff.status_am });
-
           // PM
           if (!groupedData.PM.teams[position]) {
             groupedData.PM.teams[position] = { teamName: position, inOffice: 0, wfh: 0, total: 0, staff: [] };
           }
-          groupedData.PM.teams[position].total += 1;
-          if (staff.status_pm === 'OFFICE') {
-            groupedData.PM.teams[position].inOffice += 1;
-            groupedData.PM.inOffice += 1;
-          } else {
-            groupedData.PM.teams[position].wfh += 1;
-            groupedData.PM.wfh += 1;
-          }
-          groupedData.PM.teams[position].staff.push({ staff_id: staff.staff_id, name: staff.name, status: staff.status_pm });
+          if (staff.staff_id != user.value.staff_id){
+            groupedData.PM.teams[position].total += 1;
+            if (staff.status_pm === 'OFFICE') {
+              groupedData.PM.teams[position].inOffice += 1;
+              groupedData.PM.inOffice += 1;
+            } else {
+              groupedData.PM.teams[position].wfh += 1;
+              groupedData.PM.wfh += 1;
+            }
+            groupedData.PM.teams[position].staff.push({ staff_id: staff.staff_id, name: staff.name, status: staff.status_pm });
+            }
         });
 
-        groupedData.AM.total = detailData.staff.length;
-        groupedData.PM.total = detailData.staff.length;
+
 
         selectedDateDetails.value = groupedData;
         expandedTeams.value = {}; // Reset expanded teams
@@ -481,13 +483,13 @@ async function displayDateDetails(dateStr) {
       AM: {
         inOffice: 0,
         wfh: 0,
-        total: detailData.staff.length,
+        total: detailData.staff.length - 1,
         teams: {}
       },
       PM: {
         inOffice: 0,
         wfh: 0,
-        total: detailData.staff.length,
+        total: detailData.staff.length - 1,
         teams: {}
       }
     };
@@ -499,33 +501,35 @@ async function displayDateDetails(dateStr) {
       if (!groupedData.AM.teams[position]) {
         groupedData.AM.teams[position] = { teamName: position, inOffice: 0, wfh: 0, total: 0, staff: [] };
       }
-      groupedData.AM.teams[position].total += 1;
-      if (staff.status_am === 'OFFICE') {
-        groupedData.AM.teams[position].inOffice += 1;
-        groupedData.AM.inOffice += 1;
-      } else {
-        groupedData.AM.teams[position].wfh += 1;
-        groupedData.AM.wfh += 1;
+      if (staff.staff_id != user.value.staff_id){
+        groupedData.AM.teams[position].total += 1;
+        if (staff.status_am === 'OFFICE') {
+          groupedData.AM.teams[position].inOffice += 1;
+          groupedData.AM.inOffice += 1;
+        } else {
+          groupedData.AM.teams[position].wfh += 1;
+          groupedData.AM.wfh += 1;
+        }
+        groupedData.AM.teams[position].staff.push({ staff_id: staff.staff_id, name: staff.name, status: staff.status_am });
       }
-      groupedData.AM.teams[position].staff.push({ staff_id: staff.staff_id, name: staff.name, status: staff.status_am });
+      console.log(groupedData.AM.teams[position])
 
+      if (staff.staff_id != user.value.staff_id){
       // PM
-      if (!groupedData.PM.teams[position]) {
-        groupedData.PM.teams[position] = { teamName: position, inOffice: 0, wfh: 0, total: 0, staff: [] };
+        if (!groupedData.PM.teams[position]) {
+          groupedData.PM.teams[position] = { teamName: position, inOffice: 0, wfh: 0, total: 0, staff: [] };
+        }
+        groupedData.PM.teams[position].total += 1;
+        if (staff.status_pm === 'OFFICE') {
+          groupedData.PM.teams[position].inOffice += 1;
+          groupedData.PM.inOffice += 1;
+        } else {
+          groupedData.PM.teams[position].wfh += 1;
+          groupedData.PM.wfh += 1;
+        }
+        groupedData.PM.teams[position].staff.push({ staff_id: staff.staff_id, name: staff.name, status: staff.status_pm });
       }
-      groupedData.PM.teams[position].total += 1;
-      if (staff.status_pm === 'OFFICE') {
-        groupedData.PM.teams[position].inOffice += 1;
-        groupedData.PM.inOffice += 1;
-      } else {
-        groupedData.PM.teams[position].wfh += 1;
-        groupedData.PM.wfh += 1;
-      }
-      groupedData.PM.teams[position].staff.push({ staff_id: staff.staff_id, name: staff.name, status: staff.status_pm });
     });
-
-    groupedData.AM.total = detailData.staff.length;
-    groupedData.PM.total = detailData.staff.length;
 
     selectedDateDetails.value = groupedData;
     expandedTeams.value = {}; // Reset expanded teams
