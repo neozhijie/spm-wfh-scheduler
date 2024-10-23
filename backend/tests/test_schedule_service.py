@@ -590,23 +590,23 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
             dept=self.staff3.dept,
             position=self.staff3.position,
         )
-        staff4 = Staff(
-            staff_id=4,
+        staff8 = Staff(
+            staff_id=8,
             staff_fname="Test",
             staff_lname="Staff",
             dept="Test Department",
             position="Staff",
             country="Test Country",
-            email="staff2@test.com",
+            email="staff8@test.com",
             reporting_manager=2,
             role=2,
             password="testpassword2",
         )
         db.session.add_all([schedule1, schedule2, schedule3])
-        db.session.add_all([staff4])
+        db.session.add_all([staff8])
         db.session.commit()
 
-        result = WFHScheduleService.get_staff_schedule_summary(manager_id, start_date, end_date, staff4.staff_id)
+        result = WFHScheduleService.get_staff_schedule_summary(manager_id, start_date, end_date, staff8.staff_id)
         self.assertEqual(len(result['dates']), 6)
 
         for date_data in result['dates']:
