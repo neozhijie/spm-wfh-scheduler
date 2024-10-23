@@ -52,12 +52,38 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
             role=2,
             password="testpassword2",
         )
-        db.session.add_all([staff1, staff2, staff3])
+        staff4 = Staff(
+            staff_id=4,
+            staff_fname="Manager2",
+            staff_lname="Test",
+            dept="Test Department",
+            position="Manager",
+            country="Test Country",
+            email="manager2@test.com",
+            reporting_manager=staff1.staff_id,
+            role=3,
+            password="testpassword4",
+        )
+        staff5 = Staff(
+            staff_id=5,
+            staff_fname="Staff2",
+            staff_lname="Test",
+            dept="Test Department",
+            position="Staff",
+            country="Test Country",
+            email="staff2@test.com",
+            reporting_manager=staff4.staff_id,
+            role=2,
+            password="testpassword5",
+        )
+        db.session.add_all([staff1, staff2, staff3, staff4, staff5])
         db.session.commit()
 
         self.staff1 = staff1
         self.staff2 = staff2
         self.staff3 = staff3
+        self.staff4 = staff4
+        self.staff5 = staff5
 
     def tearDown(self):
         db.session.remove()
@@ -585,6 +611,139 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
                 self.assertEqual(date_data['wfh_count_am'], 0)
                 self.assertEqual(date_data['wfh_count_pm'], 0)
 
+    def test_get_manager_schedule_summary_director_with_managers_subordinates(self):
+        manager_id = self.staff1.staff_id  # Director
+        start_date = datetime.now().date()
+        end_date = start_date + timedelta(days=5)
+
+        # Create approved schedules for staff3 and staff5
+        schedule1 = WFHSchedule(
+            request_id=1,
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            date=start_date,
+            duration='FULL_DAY',
+            status='APPROVED',
+            dept=self.staff3.dept,
+            position=self.staff3.position,
+        )
+        schedule2 = WFHSchedule(
+            request_id=2,
+            staff_id=self.staff5.staff_id,
+            manager_id=self.staff4.staff_id,
+            date=start_date + timedelta(days=2),
+            duration='HALF_DAY_AM',
+            status='APPROVED',
+            dept=self.staff5.dept,
+            position=self.staff5.position,
+        )
+        db.session.add_all([schedule1, schedule2])
+        db.session.commit()
+
+        result = WFHScheduleService.get_manager_schedule_summary(manager_id, start_date, end_date)
+        self.assertEqual(len(result['dates']), 6)
+        for date_data in result['dates']:
+            date = datetime.strptime(date_data['date'], '%Y-%m-%d').date()
+            if date == start_date:
+                self.assertEqual(date_data['wfh_count_am'], 1)
+                self.assertEqual(date_data['wfh_count_pm'], 1)
+            elif date == start_date + timedelta(days=2):
+                self.assertEqual(date_data['wfh_count_am'], 1)
+                self.assertEqual(date_data['wfh_count_pm'], 0)
+            else:
+                self.assertEqual(date_data['wfh_count_am'], 0)
+                self.assertEqual(date_data['wfh_count_pm'], 0)
+            self.assertEqual(date_data['total_staff'], 4)
+
+    def test_get_manager_schedule_summary_director_with_direct_subordinates(self):
+        # Adding a direct subordinate to the director
+        staff6 = Staff(
+            staff_id=6,
+            staff_fname="DirectStaff",
+            staff_lname="UnderDirector",
+            dept="Test Department",
+            position="Staff",
+            country="Test Country",
+            email="directstaff@test.com",
+            reporting_manager=self.staff1.staff_id,
+            role=2,
+            password="testpassword6",
+        )
+        db.session.add(staff6)
+        db.session.commit()
+
+        manager_id = self.staff1.staff_id  # Director
+        start_date = datetime.now().date()
+        end_date = start_date + timedelta(days=5)
+
+        # Create approved schedules for direct staff
+        schedule = WFHSchedule(
+            request_id=3,
+            staff_id=staff6.staff_id,
+            manager_id=manager_id,
+            date=start_date,
+            duration='FULL_DAY',
+            status='APPROVED',
+            dept=staff6.dept,
+            position=staff6.position,
+        )
+        db.session.add(schedule)
+        db.session.commit()
+
+        result = WFHScheduleService.get_manager_schedule_summary(manager_id, start_date, end_date)
+        self.assertEqual(len(result['dates']), 6)
+        for date_data in result['dates']:
+            date = datetime.strptime(date_data['date'], '%Y-%m-%d').date()
+            if date == start_date:
+                self.assertEqual(date_data['wfh_count_am'], 1)
+                self.assertEqual(date_data['wfh_count_pm'], 1)
+            else:
+                self.assertEqual(date_data['wfh_count_am'], 0)
+                self.assertEqual(date_data['wfh_count_pm'], 0)
+            self.assertEqual(date_data['total_staff'], 1)
+
+    def test_get_manager_schedule_summary_manager_with_subordinates(self):
+        manager_id = self.staff2.staff_id
+        start_date = datetime.now().date()
+        end_date = start_date + timedelta(days=5)
+
+        result = WFHScheduleService.get_manager_schedule_summary(manager_id, start_date, end_date)
+        self.assertEqual(len(result['dates']), 6)
+        for date_data in result['dates']:
+            self.assertEqual(date_data['total_staff'], 1)
+            self.assertEqual(date_data['wfh_count_am'], 0)
+            self.assertEqual(date_data['wfh_count_pm'], 0)
+            self.assertEqual(date_data['office_count_am'], 1)
+            self.assertEqual(date_data['office_count_pm'], 1)
+
+    def test_get_manager_schedule_summary_manager_with_no_subordinates(self):
+        staff7 = Staff(
+            staff_id=7,
+            staff_fname="ManagerNoSubs",
+            staff_lname="NoSubs",
+            dept="Test Department",
+            position="Manager",
+            country="Test Country",
+            email="manager.nosubs@test.com",
+            reporting_manager=self.staff1.staff_id,
+            role=3,
+            password="testpassword7",
+        )
+        db.session.add(staff7)
+        db.session.commit()
+
+        manager_id = staff7.staff_id
+        start_date = datetime.now().date()
+        end_date = start_date + timedelta(days=2)
+
+        result = WFHScheduleService.get_manager_schedule_summary(manager_id, start_date, end_date)
+        self.assertEqual(len(result['dates']), 3)
+        for date_data in result['dates']:
+            self.assertEqual(date_data['total_staff'], 0)
+            self.assertEqual(date_data['wfh_count_am'], 0)
+            self.assertEqual(date_data['wfh_count_pm'], 0)
+            self.assertEqual(date_data['office_count_am'], 0)
+            self.assertEqual(date_data['office_count_pm'], 0)
 
 if __name__ == "__main__":
     unittest.main()
