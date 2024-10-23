@@ -101,20 +101,20 @@ class WFHRequestService:
     def reject_expired(two_months_ago):
         # Fetch all requests from the database
         requests = WFHRequest.query.all()
-        updated_count = 0
+        request_ids = []
 
         # Check each request
         for request in requests:
 
-            # Check if date range is within 2 months and only update those that has not been updated
-            if (WFHRequestService.check_date(request.start_date , two_months_ago) != True) and request.status!= 'REJECTED':
-                request.status = 'REJECTED'  # Update status to rejected
-                request.reason_for_rejection = "Rejected due to past time period" 
-                updated_count += 1
+            # Check if date range is within 2 months and only update those that has not been updated expired
+            if (WFHRequestService.check_date(request.start_date , two_months_ago) != True) and request.status == 'PENDING':
+                request.status = 'EXPIRED'  # Update status to expired
+                request.reason_for_rejection = "Past time period" 
+                request_ids.append(request.request_id)
 
         # Commit the changes to the database
         db.session.commit()
-        return updated_count
+        return request_ids
     
 
     @staticmethod

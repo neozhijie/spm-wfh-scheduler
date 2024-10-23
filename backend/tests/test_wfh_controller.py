@@ -216,16 +216,30 @@ class WFHControllerTestCase(unittest.TestCase):
             manager_id=self.manager.staff_id,
             request_date=self.today,
             start_date=datetime.strptime(expired_date, "%Y-%m-%d").date(),
+            status="PENDING",
             reason_for_applying="Expired request",
-            duration="FULL_DAY",
+            duration="FULL_DAY"
         )
+
+        expired_schedule = WFHSchedule(
+            request_id = 1,
+            staff_id=self.staff.staff_id,
+            manager_id=self.manager.staff_id,
+            date=datetime.strptime(expired_date, "%Y-%m-%d").date() ,
+            status="PENDING",
+            dept="Finance",
+            position="Finance Executive",
+            duration="FULL_DAY"
+            )
+
         db.session.add(expired_request)
+        db.session.add(expired_schedule)
         db.session.commit()
 
         response = self.client.post("/api/reject-expired-request")
         resp_data = response.get_json()
         self.assertEqual(response.status_code, 200)
-        self.assertIn("Updated 1 requests to 'REJECTED'.", resp_data["message"])
+        self.assertIn("Updated requests to 'EXPIRED'.", resp_data["message"])
 
     def test_check_wfh_count(self):
         data = {"staff_id": self.staff.staff_id, "date": self.future_date, "duration" : "FULL_DAY"}

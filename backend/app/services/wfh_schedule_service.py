@@ -63,10 +63,13 @@ class WFHScheduleService:
 
 
         for schedule in schedules:
-            if status == "APPROVED":
-                schedule.status = "APPROVED"
-            elif status == "REJECTED":
-                schedule.status = "REJECTED"
+            if schedule.status == "PENDING":
+                if status == "APPROVED":
+                    schedule.status = "APPROVED"
+                elif status == "REJECTED":
+                    schedule.status = "REJECTED"
+                elif status == "EXPIRED":
+                    schedule.status = "EXPIRED"
 
         # Commit the updated schedules to the database
         db.session.commit()
