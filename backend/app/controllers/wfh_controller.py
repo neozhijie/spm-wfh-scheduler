@@ -203,8 +203,10 @@ def reject_expired_request():
         two_months_ago = current_date - timedelta(days=60)
 
         # Fetch all requests from the database
-        expired = WFHRequestService.reject_expired(two_months_ago)
-        return jsonify({"message": f"Updated {expired} requests to 'REJECTED'."}), 200
+        request_list = WFHRequestService.reject_expired(two_months_ago)
+        for request in request_list:
+            WFHScheduleService.update_schedule(request, "EXPIRED")
+        return jsonify({"message": f"Updated requests to 'EXPIRED'."}), 200
 
     except Exception as e:
         db.session.rollback()  # Rollback the session in case of an error

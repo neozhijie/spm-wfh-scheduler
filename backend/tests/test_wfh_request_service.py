@@ -226,6 +226,7 @@ class WFHRequestServiceTestCase(unittest.TestCase):
             request_date=today,
             start_date=valid_start_date,
             end_date=None,
+            status = "PENDING",
             reason_for_applying="Valid request",
             duration="FULL_DAY",
         )
@@ -235,6 +236,7 @@ class WFHRequestServiceTestCase(unittest.TestCase):
             request_date=today,
             start_date=expired_start_date,
             end_date=None,
+            status = "PENDING",
             reason_for_applying="Expired request",
             duration="FULL_DAY",
         )
@@ -242,12 +244,12 @@ class WFHRequestServiceTestCase(unittest.TestCase):
         db.session.commit()
 
         two_months_ago = today - timedelta(days=60)
-        updated_count = WFHRequestService.reject_expired(two_months_ago)
-        self.assertEqual(updated_count, 1)
+        request_list = WFHRequestService.reject_expired(two_months_ago)
+        self.assertEqual(len(request_list), 1)
         expired_request = WFHRequest.query.filter_by(
             reason_for_applying="Expired request"
         ).first()
-        self.assertEqual(expired_request.status, "REJECTED")
+        self.assertEqual(expired_request.status, "EXPIRED")
         valid_request = WFHRequest.query.filter_by(
             reason_for_applying="Valid request"
         ).first()
