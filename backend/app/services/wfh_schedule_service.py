@@ -233,11 +233,11 @@ class WFHScheduleService:
         return {'dates': dates_data}
 
     @staticmethod
-    def get_staff_schedule_summary(manager_id, start_date, end_date):
+    def get_staff_schedule_summary(manager_id, start_date, end_date,s_id):
         staff_list = Staff.query.filter_by(reporting_manager=manager_id).all()
         staff_ids = [staff.staff_id for staff in staff_list]
-        total_staff = len(staff_ids)
-        if total_staff == 0:
+        total_staff = len(staff_ids) - 1
+        if total_staff <= 0:
             return {'dates': []}
 
         date_list = []
@@ -262,13 +262,14 @@ class WFHScheduleService:
             ).all()
 
             for sched in schedules:
-                if sched.duration == 'FULL_DAY':
-                    wfh_count_am += 1
-                    wfh_count_pm += 1
-                elif sched.duration == 'HALF_DAY_AM':
-                    wfh_count_am += 1
-                elif sched.duration == 'HALF_DAY_PM':
-                    wfh_count_pm += 1
+                if sched.staff_id != int(s_id):
+                    if sched.duration == 'FULL_DAY':
+                        wfh_count_am += 1
+                        wfh_count_pm += 1
+                    elif sched.duration == 'HALF_DAY_AM':
+                        wfh_count_am += 1
+                    elif sched.duration == 'HALF_DAY_PM':
+                        wfh_count_pm += 1
 
             office_count_am = total_staff - wfh_count_am
             office_count_pm = total_staff - wfh_count_pm

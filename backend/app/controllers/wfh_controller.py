@@ -293,6 +293,7 @@ def staff_schedule_summary(reporting_manager):
         # Get start_date and end_date from query params, else use default range
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
+        staff_id = request.args.get('staff_id')
         today = datetime.now().date()
         if start_date:
             start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
@@ -304,7 +305,8 @@ def staff_schedule_summary(reporting_manager):
         else:
             end_date = today + timedelta(days=90)  # 3 months after today
 
-        data = WFHScheduleService.get_staff_schedule_summary(reporting_manager, start_date, end_date)
+        
+        data = WFHScheduleService.get_staff_schedule_summary(reporting_manager, start_date, end_date,staff_id)
         return jsonify(data), 200
     except Exception as e:
         print(f"Error in staff_schedule_summary: {str(e)}")

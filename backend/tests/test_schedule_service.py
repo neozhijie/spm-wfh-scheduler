@@ -525,7 +525,7 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
         manager_id = 99  # Non-existent manager ID
         start_date = datetime.now().date()
         end_date = start_date + timedelta(days=5)
-        result = WFHScheduleService.get_staff_schedule_summary(manager_id, start_date, end_date)
+        result = WFHScheduleService.get_staff_schedule_summary(manager_id, start_date, end_date, self.staff3.staff_id)
         self.assertEqual(result, {'dates': []})
 
     def test_get_staff_schedule_summary_with_schedules(self):
@@ -564,10 +564,23 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
             dept=self.staff3.dept,
             position=self.staff3.position,
         )
+        staff4 = Staff(
+            staff_id=4,
+            staff_fname="Test",
+            staff_lname="Staff",
+            dept="Test Department",
+            position="Staff",
+            country="Test Country",
+            email="staff2@test.com",
+            reporting_manager=2,
+            role=2,
+            password="testpassword2",
+        )
         db.session.add_all([schedule1, schedule2, schedule3])
+        db.session.add_all([staff4])
         db.session.commit()
 
-        result = WFHScheduleService.get_staff_schedule_summary(manager_id, start_date, end_date)
+        result = WFHScheduleService.get_staff_schedule_summary(manager_id, start_date, end_date, staff4.staff_id)
         self.assertEqual(len(result['dates']), 6)
 
         for date_data in result['dates']:

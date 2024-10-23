@@ -178,11 +178,9 @@ const computeMaxDate = computed(() => {
 
 function getColorForPercentage(percentage) {
   percentage = parseFloat(percentage);
-  if (percentage < 50) {
-    return '#FF6B6B'; // Red
-  } else if (percentage < 75) {
+  if (percentage != 100) {
     return '#FFD93D'; // Yellow
-  } else {
+  }   else {
     return '#6BCB77'; // Green
   }
 }
@@ -195,7 +193,8 @@ async function fetchStaffScheduleSummary(start, end) {
     const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/staff-schedule-summary/${user.value.reporting_manager}`, {
       params: {
         start_date: startDateStr,
-        end_date: endDateStr
+        end_date: endDateStr,
+        staff_id: user.value.staff_id
       }
     });
 
