@@ -798,10 +798,14 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
 
         # Add a full-day WFH schedule for staff3
         wfh_schedule = WFHSchedule(
+            request_id=1,
             staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
             date=start_date,
             duration='FULL_DAY',
-            status='APPROVED'
+            status='APPROVED',
+            dept=self.staff3.dept,
+            position=self.staff3.position,
         )
         db.session.add(wfh_schedule)
         db.session.commit()
@@ -836,10 +840,14 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
 
         # Add a half-day AM WFH schedule for staff4
         wfh_schedule = WFHSchedule(
+            request_id=2,
             staff_id=self.staff4.staff_id,
+            manager_id=self.staff1.staff_id,
             date=start_date,
             duration='HALF_DAY_AM',
-            status='APPROVED'
+            status='APPROVED',
+            dept=self.staff4.dept,
+            position=self.staff4.position
         )
         db.session.add(wfh_schedule)
         db.session.commit()
@@ -874,10 +882,14 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
 
         # Add a half-day PM WFH schedule for staff5
         wfh_schedule = WFHSchedule(
+            request_id=3,
             staff_id=self.staff5.staff_id,
+            manager_id=self.staff4.staff_id,
             date=start_date,
             duration='HALF_DAY_PM',
-            status='APPROVED'
+            status='APPROVED',
+            dept=self.staff5.dept,
+            position=self.staff5.position
         )
         db.session.add(wfh_schedule)
         db.session.commit()
