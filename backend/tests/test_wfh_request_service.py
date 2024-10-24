@@ -298,6 +298,106 @@ class WFHRequestServiceTestCase(unittest.TestCase):
             )
         self.assertEqual(str(context.exception), "End date must be after start date.")
 
+def test_get_requests_no_requests_for_staff(self):
+    # Assuming staff1 has no requests created in the setup
+    no_requests = WFHRequestService.get_staff_requests(staff_id=self.staff1.staff_id)
+
+    # Verify that the returned list is empty
+    self.assertEqual(len(no_requests), 0)
+    self.assertEqual(no_requests, [])
+
+def test_create_wfh_request_success(self):
+    today = datetime.now().date()
+    start_date = (today + timedelta(days=5)).strftime("%Y-%m-%d")
+
+    # Create a WFH request for staff3
+    wfh_request = WFHRequestService.create_request(
+        staff_id=self.staff3.staff_id,
+        manager_id=self.staff2.staff_id,
+        request_date=today,
+        start_date=start_date,
+        end_date=None,
+        reason_for_applying="Personal reasons",
+        duration="FULL_DAY",
+    )
+
+    # Verify the request was created successfully
+    requests = WFHRequestService.get_staff_requests(staff_id=self.staff3.staff_id)
+    self.assertEqual(len(requests), 1)
+    self.assertEqual(requests[0].status, "PENDING")
+
+def test_update_request_to_approved(self):
+    # Assume a WFH request has already been created for staff3
+    today = datetime.now().date()
+    start_date = (today + timedelta(days=5)).strftime("%Y-%m-%d")
+
+    wfh_request = WFHRequestService.create_request(
+        staff_id=self.staff3.staff_id,
+        manager_id=self.staff2.staff_id,
+        request_date=today,
+        start_date=start_date,
+        end_date=None,
+        reason_for_applying="Personal reasons",
+        duration="FULL_DAY",
+    )
+
+    # Update the WFH request status to "APPROVED"
+    response = WFHRequestService.update_request(
+        request_id=wfh_request.request_id,
+        new_request_status="APPROVED",
+        reason=None
+    )
+    self.assertTrue(response)
+
+    # Verify the updated status
+    updated_requests = WFHRequestService.get_staff_requests(staff_id=self.staff3.staff_id)
+    self.assertEqual(len(updated_requests), 1)
+    self.assertEqual(updated_requests[0].status, "APPROVED")
+
+def test_update_request_to_cancelled(self):
+    # Assume a WFH request has already been created and approved for staff3
+    today = datetime.now().date()
+    start_date = (today + timedelta(days=5)).strftime("%Y-%m-%d")
+
+    wfh_request = WFHRequestService.create_request(
+        staff_id=self.staff3.staff_id,
+        manager_id=self.staff2.staff_id,
+        request_date=today,
+        start_date=start_date,
+        end_date=None,
+        reason_for_applying="Personal reasons",
+        duration="FULL_DAY",
+    )
+
+    # First update the request to "APPROVED"
+    WFHRequestService.update_request(
+        request_id=wfh_request.request_id,
+        new_request_status="APPROVED",
+        reason=None
+    )
+
+    # Now update the request to "CANCELLED"
+    response = WFHRequestService.update_request(
+        request_id=wfh_request.request_id,
+        new_request_status="CANCELLED",
+        reason="No longer needed"
+    )
+    self.assertTrue(response)
+
+    # Verify the cancelled status
+    cancelled_requests = WFHRequestService.get_staff_requests(staff_id=self.staff3.staff_id)
+    self.assertEqual(len(cancelled_requests), 1)
+    self.assertEqual(cancelled_requests[0].status, "CANCELLED")
+
+def test_get_requests_with_invalid_staff_id(self):
+    # Try to retrieve requests for a non-existent staff ID
+    invalid_staff_id = 999  # Assuming this ID does not exist in the database
+    requests = WFHRequestService.get_staff_requests(staff_id=invalid_staff_id)
+
+    # Verify that the returned list is empty
+    self.assertEqual(len(requests), 0)
+    self.assertEqual(requests, [])
+
 
 if __name__ == "__main__":
     unittest.main()
