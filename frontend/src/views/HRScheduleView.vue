@@ -1,127 +1,223 @@
 <template>
-    <div id="app">
-      <Navbar />
-      <div class="dashboard-container">
-        <div class="main-section">
-          <div class="calendar-container">
-            <FullCalendar :options="calendarOptions" @dateClick="handleDateClick" />
-            <div v-if="isLoading" class="loading-overlay">
-              <div class="spinner"></div>
+  <div id="app">
+    <Navbar />
+    <div class="dashboard-container">
+      <div class="main-section">
+        <div class="calendar-container">
+          <FullCalendar :options="calendarOptions" @dateClick="handleDateClick" />
+          <div v-if="isLoading" class="loading-overlay">
+            <div class="spinner"></div>
+          </div>
+        </div>
+        <div class="right-container" :class="{'show': isRightContainerVisible}">
+          <div v-if="selectedDateDetails" class="details-container">
+            <div class="details-header">
+              <h2>Details for {{ selectedDate }}</h2>
+              <button 
+                v-if="isSmallScreen" 
+                class="close-button" 
+                @click="isRightContainerVisible = false"
+              >
+                ×
+              </button>
+            </div>
+            <div class="tabs">
+              <button :class="['tab', activeTab === 'AM' ? 'active' : '']" @click="activeTab = 'AM'">AM</button>
+              <button :class="['tab', activeTab === 'PM' ? 'active' : '']" @click="activeTab = 'PM'">PM</button>
+            </div>
+            <!-- filter department dropdown -->
+            <select class="custom-dropdown" v-model="selectedDepartment" @change="filterByDepartment">
+              <option value="" disabled selected>Select Department</option>
+              <option v-for="department in departments" :key="department.dept" :value="department.dept">
+              {{ department.dept }}
+              </option>
+          </select>
+            <div class="tab-content">
+              <div v-if="activeTab === 'AM'">
+                <div class="summary" v-if="selectedDepartment">
+                  <div class="summary-item">
+                    <span class="summary-label">In Office:</span>
+                    <span class="summary-value">{{ selectedDateDetails.AM.inOffice }} / {{ selectedDateDetails.AM.total }}</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">WFH:</span>
+                    <span class="summary-value">{{ selectedDateDetails.AM.wfh }} / {{ selectedDateDetails.AM.total }}</span>
+                  </div>
+                </div>
+                <div class="managers" v-if="Object.keys(selectedDateDetails.AM.managers).length">
+                  <div
+                    class="manager card"
+                    v-for="(manager, managerId) in selectedDateDetails.AM.managers"
+                    :key="managerId"
+                    @click="toggleManager('AM', managerId)"
+                  >
+                    <div class="manager-header">
+                      <h3>{{ manager.managerName }}</h3>
+                      <div class="badge-container">
+                        <span class="badge badge-office">
+                          In Office: {{ manager.inOffice }}/{{ manager.total }}
+                        </span>
+                        <span class="badge badge-wfh">
+                          WFH: {{ manager.wfh }}/{{ manager.total }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="position-list" v-if="expandedManagers['AM-' + managerId]">
+                      <div
+                        class="position card"
+                        v-for="(position, positionName) in manager.positions"
+                        :key="positionName"
+                        @click.stop="togglePosition('AM', managerId, positionName)"
+                      >
+                        <div class="position-header">
+                          <h3>{{ positionName }}</h3>
+                          <div class="badge-container">
+                            <span class="badge badge-office">
+                              In Office: {{ position.staff.filter(s => s.status === 'OFFICE').length }}/{{ position.staff.length }}
+                            </span>
+                            <span class="badge badge-wfh">
+                              WFH: {{ position.staff.filter(s => s.status !== 'OFFICE').length }}/{{ position.staff.length }}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div class="employee-list" v-if="expandedPositions['AM-' + managerId + '-' + positionName]">
+                          <div class="employee-card" v-for="staff in position.staff" :key="staff.staff_id">
+                            <span :class="['status-indicator', staff.status === 'OFFICE' ? 'green' : 'yellow']"></span>
+                            <span class="employee-name">{{ staff.name }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="teams" v-else>
+                  <div 
+                    class="team card" 
+                    v-for="team in selectedDateDetails.AM.teams" 
+                    :key="team.teamName"
+                    @click="toggleTeam('AM', team.teamName)"
+                  >
+                    <div class="team-header">
+                      <h3>{{ team.teamName }}</h3>
+                      <div class="badge-container">
+                        <span class="badge badge-office">
+                          In Office: {{ team.inOffice }}/{{ team.total }}
+                        </span>
+                        <span class="badge badge-wfh">
+                          WFH: {{ team.wfh }}/{{ team.total }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="staff-list" v-if="expandedTeams['AM-' + team.teamName]">
+                      <div class="staff-card" v-for="staff in team.staff" :key="staff.staff_id">
+                        <span :class="['status-indicator', staff.status === 'OFFICE' ? 'green' : 'yellow']"></span>
+                        <span class="staff-name">{{ staff.name }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div v-else-if="activeTab === 'PM'">
+                <div class="summary">
+                  <div class="summary-item">
+                    <span class="summary-label">In Office:</span>
+                    <span class="summary-value">{{ selectedDateDetails.PM.inOffice }} / {{ selectedDateDetails.PM.total }}</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">WFH:</span>
+                    <span class="summary-value">{{ selectedDateDetails.PM.wfh }} / {{ selectedDateDetails.PM.total }}</span>
+                  </div>
+                </div>
+                <div class="managers" v-if="Object.keys(selectedDateDetails.PM.managers).length">
+                  <div
+                    class="manager card"
+                    v-for="(manager, managerId) in selectedDateDetails.PM.managers"
+                    :key="managerId"
+                    @click="toggleManager('PM', managerId)"
+                  >
+                    <div class="manager-header">
+                      <h3>{{ manager.managerName }}</h3>
+                      <div class="badge-container">
+                        <span class="badge badge-office">
+                          In Office: {{ manager.inOffice }}/{{ manager.total }}
+                        </span>
+                        <span class="badge badge-wfh">
+                          WFH: {{ manager.wfh }}/{{ manager.total }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="position-list" v-if="expandedManagers['PM-' + managerId]">
+                      <div
+                        class="position card"
+                        v-for="(position, positionName) in manager.positions"
+                        :key="positionName"
+                        @click.stop="togglePosition('PM', managerId, positionName)"
+                      >
+                        <div class="position-header">
+                          <h3>{{ positionName }}</h3>
+                          <div class="badge-container">
+                            <span class="badge badge-office">
+                              In Office: {{ position.staff.filter(s => s.status === 'OFFICE').length }}/{{ position.staff.length }}
+                            </span>
+                            <span class="badge badge-wfh">
+                              WFH: {{ position.staff.filter(s => s.status !== 'OFFICE').length }}/{{ position.staff.length }}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div class="employee-list" v-if="expandedPositions['PM-' + managerId + '-' + positionName]">
+                          <div class="employee-card" v-for="staff in position.staff" :key="staff.staff_id">
+                            <span :class="['status-indicator', staff.status === 'OFFICE' ? 'green' : 'yellow']"></span>
+                            <span class="employee-name">{{ staff.name }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="teams" v-else>
+                  <div 
+                    class="team card" 
+                    v-for="team in selectedDateDetails.PM.teams" 
+                    :key="team.teamName"
+                    @click="toggleTeam('PM', team.teamName)"
+                  >
+                    <div class="team-header">
+                      <h3>{{ team.teamName }}</h3>
+                      <div class="badge-container">
+                        <span class="badge badge-office">
+                          In Office: {{ team.inOffice }}/{{ team.total }}
+                        </span>
+                        <span class="badge badge-wfh">
+                          WFH: {{ team.wfh }}/{{ team.total }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="staff-list" v-if="expandedTeams['PM-' + team.teamName]">
+                      <div class="staff-card" v-for="staff in team.staff" :key="staff.staff_id">
+                        <span :class="['status-indicator', staff.status === 'OFFICE' ? 'green' : 'yellow']"></span>
+                        <span class="staff-name">{{ staff.name }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="right-container" :class="{'show': isRightContainerVisible}">
-            <div v-if="selectedDateDetails" class="details-container">
-              <div class="details-header">
-                <h2>Details for {{ selectedDate }}</h2>
-                <button 
-                  v-if="isSmallScreen" 
-                  class="close-button" 
-                  @click="isRightContainerVisible = false"
-                >
-                  ×
-                </button>
-              </div>
-              <div class="tabs">
-                <button :class="['tab', activeTab === 'AM' ? 'active' : '']" @click="activeTab = 'AM'">AM</button>
-                <button :class="['tab', activeTab === 'PM' ? 'active' : '']" @click="activeTab = 'PM'">PM</button>
-              </div>
-
-              <!-- filter department dropdown -->
-              <select class="custom-dropdown" v-model="selectedDepartment" @change="filterByDepartment">
-                <option value="" disabled selected>Select Department</option>
-                <option v-for="department in departments" :key="department.dept" :value="department.dept">
-                {{ department.dept }}
-                </option>
-            </select>
-
-              <div class="tab-content">
-                <div v-if="activeTab === 'AM'">
-                  <div class="summary" v-if="selectedDepartment">
-                    <div class="summary-item">
-                      <span class="summary-label">In Office:</span>
-                      <span class="summary-value">{{ selectedDateDetails.AM.inOffice }} / {{ selectedDateDetails.AM.total }}</span>
-                    </div>
-                    <div class="summary-item">
-                      <span class="summary-label">WFH:</span>
-                      <span class="summary-value">{{ selectedDateDetails.AM.wfh }} / {{ selectedDateDetails.AM.total }}</span>
-                    </div>
-                  </div>
-                  <div class="teams">
-                    <div 
-                      class="team card" 
-                      v-for="team in selectedDateDetails.AM.teams" 
-                      :key="team.teamName"
-                      @click="toggleTeam('AM', team.teamName)"
-                    >
-                      <div class="team-header">
-                        <h3>{{ team.teamName }}</h3>
-                        <div class="badge-container">
-                          <span class="badge badge-office">
-                            In Office: {{ team.inOffice }}/{{ team.total }}
-                          </span>
-                          <span class="badge badge-wfh">
-                            WFH: {{ team.wfh }}/{{ team.total }}
-                          </span>
-                        </div>
-                      </div>
-                      <div class="staff-list" v-if="expandedTeams['AM-' + team.teamName]">
-                        <div class="staff-card" v-for="staff in team.staff" :key="staff.staff_id">
-                          <span :class="['status-indicator', staff.status === 'OFFICE' ? 'green' : 'yellow']"></span>
-                          <span class="staff-name">{{ staff.name }}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div v-else-if="activeTab === 'PM'">
-                  <div class="summary">
-                    <div class="summary-item">
-                      <span class="summary-label">In Office:</span>
-                      <span class="summary-value">{{ selectedDateDetails.PM.inOffice }} / {{ selectedDateDetails.PM.total }}</span>
-                    </div>
-                    <div class="summary-item">
-                      <span class="summary-label">WFH:</span>
-                      <span class="summary-value">{{ selectedDateDetails.PM.wfh }} / {{ selectedDateDetails.PM.total }}</span>
-                    </div>
-                  </div>
-                  <div class="teams">
-                    <div 
-                      class="team card" 
-                      v-for="team in selectedDateDetails.PM.teams" 
-                      :key="team.teamName"
-                      @click="toggleTeam('PM', team.teamName)"
-                    >
-                      <div class="team-header">
-                        <h3>{{ team.teamName }}</h3>
-                        <div class="badge-container">
-                          <span class="badge badge-office">
-                            In Office: {{ team.inOffice }}/{{ team.total }}
-                          </span>
-                          <span class="badge badge-wfh">
-                            WFH: {{ team.wfh }}/{{ team.total }}
-                          </span>
-                        </div>
-                      </div>
-                      <div class="staff-list" v-if="expandedTeams['PM-' + team.teamName]">
-                        <div class="staff-card" v-for="staff in team.staff" :key="staff.staff_id">
-                          <span :class="['status-indicator', staff.status === 'OFFICE' ? 'green' : 'yellow']"></span>
-                          <span class="staff-name">{{ staff.name }}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div v-else class="no-selection">
-              <p>Select a date on the calendar to view details.</p>
-            </div>
+          <div v-else class="no-selection">
+            <p>Select a date on the calendar to view details.</p>
           </div>
         </div>
       </div>
     </div>
-  </template>
-  
+  </div>
+</template>
+
   <script setup>
   import { ref, onMounted, computed, onUnmounted } from 'vue';
   import Navbar from '@/components/Navbar.vue';
@@ -146,6 +242,8 @@
   const showFilter = ref(false); // Control visibility of the filter dropdown
   const selectedDepartment = ref(''); // Selected department from the dropdown
   const selectedDepartmentName = ref(''); // To display selected department name
+  const expandedManagers = ref([]); // Initialize as an empty object
+  const expandedPositions = ref([]); // Initialize as an empty object
   // Handle window resize to update isSmallScreen
   const handleResize = () => {
     isSmallScreen.value = window.innerWidth < 768;
@@ -498,79 +596,117 @@
     }
   }
   async function filterByDepartment() {
-  // Ensure a department is selected
   if (!selectedDepartment.value) return;
 
-  // Fetch and display the details for the selected date and department
   await displayDateDetails(selectedDate.value);
 }
-
-  // Display date details when a date is selected
   async function displayDateDetails(dateStr) {
-  const detailData = await fetchHRScheduleDetail(dateStr);
+    const detailData = await fetchHRScheduleDetail(dateStr);
 
-  if (detailData) {
-    // Filter staff based on the selected department
-    const filteredStaff = detailData.staff.filter(staff => staff.dept === selectedDepartment.value);
-    
-    let groupedData = {
-      AM: {
-        inOffice: 0,
-        wfh: 0,
-        total: filteredStaff.length,
-        teams: {}
-      },
-      PM: {
-        inOffice: 0,
-        wfh: 0,
-        total: filteredStaff.length,
-        teams: {}
-      }
-    };
+    if (detailData) {
+      const filteredStaff = detailData.staff.filter(staff => staff.dept === selectedDepartment.value);
+      
+      let groupedData = {
+        AM: {
+          inOffice: 0,
+          wfh: 0,
+          total: filteredStaff.length,
+          managers: {},
+          teams: {}
+        },
+        PM: {
+          inOffice: 0,
+          wfh: 0,
+          total: filteredStaff.length,
+          managers: {},
+          teams: {}
+        }
+      };
 
-    // Populate AM/PM teams with filtered staff
-    filteredStaff.forEach(staff => {
-      const position = staff.position || 'Unknown';
+      const hasManagers = filteredStaff.some(staff => staff.role === 3);
 
-      // AM
-      if (!groupedData.AM.teams[position]) {
-        groupedData.AM.teams[position] = { teamName: position, inOffice: 0, wfh: 0, total: 0, staff: [] };
-      }
-      groupedData.AM.teams[position].total += 1;
-      if (staff.status_am === 'OFFICE') {
-        groupedData.AM.teams[position].inOffice += 1;
-        groupedData.AM.inOffice += 1;
-      } else {
-        groupedData.AM.teams[position].wfh += 1;
-        groupedData.AM.wfh += 1;
-      }
-      groupedData.AM.teams[position].staff.push({ staff_id: staff.staff_id, name: staff.name, status: staff.status_am });
+      const processStaff = (period) => {
+        filteredStaff.forEach(staff => {
+          const position = staff.position || 'Unknown';
+          const role = staff.role;
 
-      // PM
-      if (!groupedData.PM.teams[position]) {
-        groupedData.PM.teams[position] = { teamName: position, inOffice: 0, wfh: 0, total: 0, staff: [] };
-      }
-      groupedData.PM.teams[position].total += 1;
-      if (staff.status_pm === 'OFFICE') {
-        groupedData.PM.teams[position].inOffice += 1;
-        groupedData.PM.inOffice += 1;
-      } else {
-        groupedData.PM.teams[position].wfh += 1;
-        groupedData.PM.wfh += 1;
-      }
-      groupedData.PM.teams[position].staff.push({ staff_id: staff.staff_id, name: staff.name, status: staff.status_pm });
-    });
+          if (hasManagers) { 
 
-    selectedDateDetails.value = groupedData;
-    expandedTeams.value = {}; // Reset expanded teams
+            if (role === 3 || role === 1) {
+              if (!groupedData[period].managers[staff.staff_id]) {
+                groupedData[period].managers[staff.staff_id] = {
+                  managerId: staff.staff_id,
+                  managerName: staff.name,
+                  inOffice: 0,
+                  wfh: 0,
+                  total: 0,
+                  positions: {}
+                };
+              }
 
-    // Show the details in the right container
-    isRightContainerVisible.value = true;
-  } else {
-    alert('Error fetching details for the selected date.');
+
+              if (staff[`status_${period.toLowerCase()}`] === 'OFFICE') {
+                groupedData[period].managers[staff.staff_id].inOffice += 1;
+                groupedData[period].inOffice += 1;
+              } else {
+                groupedData[period].managers[staff.staff_id].wfh += 1;
+                groupedData[period].wfh += 1;
+              }
+              groupedData[period].managers[staff.staff_id].total += 1;
+            }
+
+            if (staff.manager_id in groupedData[period].managers && staff.role !== 3) {
+              if (staff[`status_${period.toLowerCase()}`] === 'OFFICE') {
+                groupedData[period].managers[staff.manager_id].inOffice += 1;
+                groupedData[period].inOffice += 1;
+              } else {
+                groupedData[period].managers[staff.manager_id].wfh += 1;
+                groupedData[period].wfh += 1;
+              }
+              groupedData[period].managers[staff.manager_id].total += 1;
+
+              if (!groupedData[period].managers[staff.manager_id].positions[position]) {
+                groupedData[period].managers[staff.manager_id].positions[position] = { staff: [] };
+              }
+              groupedData[period].managers[staff.manager_id].positions[position].staff.push({
+                staff_id: staff.staff_id,
+                name: staff.name,
+                status: staff[`status_${period.toLowerCase()}`]
+              });
+            }
+          } else { 
+            if (!groupedData[period].teams[position]) {
+              groupedData[period].teams[position] = { teamName: position, inOffice: 0, wfh: 0, total: 0, staff: [] };
+            }
+            groupedData[period].teams[position].total += 1;
+
+            if (staff[`status_${period.toLowerCase()}`] === 'OFFICE') {
+              groupedData[period].teams[position].inOffice += 1;
+              groupedData[period].inOffice += 1;
+            } else {
+              groupedData[period].teams[position].wfh += 1;
+              groupedData[period].wfh += 1;
+            }
+            groupedData[period].teams[position].staff.push({
+              staff_id: staff.staff_id,
+              name: staff.name,
+              status: staff[`status_${period.toLowerCase()}`]
+            });
+          }
+        });
+      };
+
+      processStaff('AM');
+      processStaff('PM');
+
+      selectedDateDetails.value = groupedData;
+      expandedTeams.value = {}; 
+
+      isRightContainerVisible.value = true;
+    } else {
+      alert('Error fetching details for the selected date.');
+    }
   }
-}
-
   
   // Fetch HR schedule details for a specific date
   async function fetchHRScheduleDetail(dateStr) {
@@ -642,6 +778,28 @@
     const key = `${timeOfDay}-${teamName}`;
     expandedTeams.value[key] = !expandedTeams.value[key];
   }
+  function toggleManager(timeOfDay, managerId) {
+  const key = `${timeOfDay}-${managerId}`;
+  expandedManagers.value[key] = !expandedManagers.value[key];
+
+  // If a manager is expanded, collapse all positions under it by default
+  if (!expandedManagers.value[key]) {
+    const manager = selectedDateDetails.value[timeOfDay].managers[managerId];
+    Object.keys(manager.positions).forEach(positionName => {
+      const positionKey = `${timeOfDay}-${managerId}-${positionName}`;
+      expandedPositions.value[positionKey] = false; // Ensure positions are collapsed
+    });
+  }
+}
+function togglePosition(timeOfDay, managerId, positionName) {
+  const key = `${timeOfDay}-${managerId}-${positionName}`;
+  
+  // Toggle the staff list visibility for that position
+  expandedPositions.value[key] = !expandedPositions.value[key];
+}
+
+
+
   </script>
   
   <style scoped>
@@ -793,6 +951,42 @@
     color: #2e3a59;
   }
   
+  .manager.card {
+    transition: background-color 0.2s ease;
+  }
+
+  .manager.card:hover {
+    background-color: #f0f4ff;
+  }
+
+  .managers {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .manager {
+    background-color: #ffffff;
+    border: 1px solid #dfe3e8;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+  }
+
+  .manager-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .manager-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: #2e3a59;
+  }
+
   .badge-container {
     display: flex;
     gap: 0.5rem;
@@ -829,6 +1023,42 @@
     padding: 0.5rem 0.75rem;
     background-color: #f9fafb;
   }
+  .position.card {
+    transition: background-color 0.2s ease;
+  }
+
+  .position.card:hover {
+    background-color: #f0f4ff;
+  }
+
+  .positions {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .position {
+    background-color: #ffffff;
+    border: 1px solid #dfe3e8;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+  }
+
+  .position-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .position-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: #2e3a59;
+  }
+
   
   .status-indicator {
     display: inline-block;
@@ -1016,6 +1246,46 @@
   
   .team.card:hover {
     background-color: #f0f4ff;
+  }
+
+  .employee-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .employee-card {
+    display: flex;
+    align-items: center;
+    border: 1px solid #dfe3e8;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    background-color: #f9fafb;
+    transition: background-color 0.2s ease;
+  }
+
+  .employee-card:hover {
+    background-color: #eef3fc;
+  }
+
+  .employee-card .status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 0.75rem;
+  }
+
+  .employee-card .green {
+    background-color: #34c759;
+  }
+
+  .employee-card .yellow {
+    background-color: #ffcc00;
+  }
+
+  .employee-card .employee-name {
+    font-size: 0.9rem;
+    color: #2e3a59;
   }
 
   .custom-dropdown {
