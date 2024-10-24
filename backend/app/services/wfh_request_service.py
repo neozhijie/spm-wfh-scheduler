@@ -1,5 +1,6 @@
 from app import db
 from app.models.wfh_request import WFHRequest
+from app.models.wfh_schedule import WFHSchedule
 from datetime import datetime, timedelta, date
 
 class WFHRequestService:
@@ -123,3 +124,8 @@ class WFHRequestService:
             return True
         else:
             return False
+        
+    @staticmethod
+    def get_staff_requests(staff_id):
+        return WFHRequest.query.filter_by(staff_id = staff_id).all()
+

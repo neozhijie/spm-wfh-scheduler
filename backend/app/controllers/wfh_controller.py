@@ -322,3 +322,17 @@ def staff_schedule_detail(staff_id, date):
     except Exception as e:
         print(f"Error in staff_schedule_detail: {str(e)}")
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+
+@wfh_bp.route('staff-requests/<int:staff_id>', methods=['GET'])
+def get_staff_requests(staff_id):
+    try:
+        staff_requests = WFHRequestService.get_staff_requests(staff_id)
+        requests_data = [request.to_dict() for request in staff_requests]
+        # Return the serialized data using jsonify
+        print("Success")
+        return jsonify({"staff_requests": requests_data}), 200
+    except Exception as e:
+        print(f"Error in get_staff_requests: {str(e)}")
+        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+        
+        
