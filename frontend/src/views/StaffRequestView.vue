@@ -111,7 +111,7 @@ const fetchRequests = async () => {
 
         // console.log('userData:', userData);
         // console.log('response:', response);
-        // console.log('requests:', response.data);
+        console.log('all requests:', response.data);
         // console.log(typeof (response.data));
         // console.log('err');
 
@@ -125,13 +125,24 @@ const fetchRequests = async () => {
         isLoaded.value = true;
     }
 }
-
+// TODO: modify such that its status on ScheduleView.vue is *CANCELLED or *WITHDRAWN
 const cancelRequest = async (request_id) => {
+
+    // console.log('request_id:', request_id);
+
+    // const userData = JSON.parse(localStorage.getItem('user'));
+    // console.log('userData:', userData);
+
+    // console.log()
+
+    // const response = await axios.patch(`${import.meta.env.VITE_API_URL}/api/update-request/`);
+    // console.log('response:', response);
+    // console.log('request to be cancelled:', response);
+    
     try {
         const response = await axios.patch(`${import.meta.env.VITE_API_URL}/api/update-request`, {
             request_id: request_id,
-            request_status: 'CANCELLED',
-            reason: ''
+            request_status: 'CANCELLED'
         });
         console.log('Cancellation response:', response.data);
         await fetchRequests();
@@ -145,8 +156,7 @@ const withdrawRequest = async (request_id) => {
     try {
         const response = await axios.patch(`${import.meta.env.VITE_API_URL}/api/update-request`, {
             request_id: request_id,
-            request_status: 'WITHDRAWN',
-            reason: ''
+            request_status: 'WITHDRAWN'
         });
         console.log('Withdrawal response:', response.data);
         await fetchRequests();
