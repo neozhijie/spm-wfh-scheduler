@@ -10,55 +10,63 @@
                     </div>
                 <div class="filter-buttons d-flex justify-content-start align-items-center my-3">
                     <div v-for="status in statuses" :key="status" class="me-2">
-                        <button @click="filterRequestStatus(status)" 
-                                :class="['btn', filterStatus === status ? 'btn-primary' : 'btn-outline-secondary']">
+                        <button 
+                            @click="filterStatus = status" 
+                            :class="['btn',getStatusButtonClass(status)]">
                             {{ status }}
                         </button>
                     </div>
                 </div>
                     <div v-if="isLoaded" class="card-body shadow">
-                        <div v-if="filteredRequests.length" class="table">
+                        <div v-if="filteredRequests.length>0" class="table">
                             <table class="table table-hover">
                                 <thead class="thead-light">
                                     <tr>
                                         <th>Date Requested</th>
-                                        <th>Name</th>
                                         <th>Start Date</th>
                                         <th>End Date</th>
                                         <th>Reason</th>
                                         <th>Request Type</th>
                                         <th>Status</th>
+                                        <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr v-for="request in filteredRequests" :key="request.request_id">
                                         <td>{{ formatDate(request.request_date) }}</td>
-                                        <td>{{ filteredRequests[request.staff_id] || 'Loading...' }}</td>
                                         <td>{{ formatDate(request.start_date) }}</td>
                                         <td>{{ request.end_date ? formatDate(request.end_date) : '-' }}</td>
                                         <td>{{ request.reason_for_applying }}</td>
                                         <td>
-                                            <span v-if="request.is_recurring"
-                                                class="badge bg-info ms-1">Recurring</span>
-                                            <span v-else="request.is_recurring"
-                                                class="badge bg-primary ms-1">Ad-hoc</span>
-                                            <span v-if="request.duration === 'FULL_DAY'"
-                                                class="badge bg-success ms-1">FULL DAY</span>
-                                            <span v-else-if="request.duration === 'HALF_DAY_AM'"
-                                                class="badge bg-warning text-dark ms-1">AM</span>
-                                            <span v-else-if="request.duration === 'HALF_DAY_PM'"
-                                                class="badge bg-warning text-dark ms-1">PM</span>
+                                            <span v-if="request.is_recurring" class="badge bg-info ms-1">Recurring</span>
+                                            <span v-else class="badge bg-primary ms-1">Ad-hoc</span>
+                                            <span v-if="request.duration === 'FULL_DAY'" class="badge bg-success ms-1">FULL DAY</span>
+                                            <span v-else-if="request.duration === 'HALF_DAY_AM'" class="badge bg-warning text-dark ms-1">AM</span>
+                                            <span v-else-if="request.duration === 'HALF_DAY_PM'" class="badge bg-warning text-dark ms-1">PM</span>
                                         </td>
                                         <td>
                                             <span :class="getRequestStatus(request.status)">{{ request.status }}</span>
                                         </td>
+                                        <td>
+                                            <!-- <button v-if="request.status === 'PENDING'" 
+                                                    class="btn btn-danger btn-sm" 
+                                                    @click="cancelRequest(request.request_id)">
+                                                Cancel
+                                            </button> -->
+                                            <button v-if="request.status === 'APPROVED'" 
+                                                    class="btn btn-warning btn-sm" 
+                                                    @click="withdrawRequest(request.request_id)">
+                                                Withdraw
+                                            </button>
+                                        </td>
                                     </tr>
                                 </tbody>
+
                             </table>
                         </div>
-                        <!-- Dynamic 'NIL' display TBA -->
-                        <p v-else class="text-muted">No {{ filterRequestStatus === 'All' ? '' : filterRequestStatus }} requests found.
-                        </p>
+                    <p v-else class="text-muted">
+                        No {{ filterStatus === 'All' ? '' : filterStatus }} requests found.
+                    </p>
                     </div>
                 </div>
             </div>
@@ -77,14 +85,21 @@ const allRequests = ref([]);
 const isLoaded = ref(false);
 
 const filterStatus = ref('All');;
-const statuses = ['All', 'Pending', 'Approved', 'Rejected', 'Expired', 'Cancelled', 'Withdrawn'];
+// const statuses = ['All', 'Pending', 'Approved', 'Rejected', 'Expired', 'Cancelled', 'Withdrawn'];
+const statuses = ['All', 'Pending', 'Approved', 'Rejected', 'Others'];
+
 
 // error here
 const filteredRequests = computed(() => {
     if (filterStatus.value === 'All') {
         return allRequests.value;
+    } else if (filterStatus.value === 'Others') {
+        return allRequests.value.filter(request => 
+            ['EXPIRED', 'CANCELLED', 'WITHDRAWN'].includes(request.status)
+        );
+    } else {
+        return allRequests.value.filter(request => request.status === filterStatus.value.toUpperCase());
     }
-    return allRequests.value.filter(request => request.status === filterStatus.value.toUpperCase());
 });
 
 const fetchRequests = async () => {
@@ -111,24 +126,48 @@ const fetchRequests = async () => {
     }
 }
 
-console.log('filteredRequests:',filteredRequests);
+// const cancelRequest = async (request_id) => {
+//     try {
+//         const response = await axios.patch(`${import.meta.env.VITE_API_URL}/api/update-request`, {
+//             request_id: request_id,
+//             request_status: 'CANCELLED',
+//         });
+//         console.log('Cancellation response:', response.data);
+//         await fetchRequests();
+//     } catch (error) {
+//         console.error('Error cancelling request:', error);
+//         if (error.response && error.response.data && error.response.data.message) {
+//             alert(`Error cancelling request: ${error.response.data.message}`);
+//         } else {
+//             alert('Error cancelling request');
+//         }
+//     }
+// };
+
+const withdrawRequest = async (request_id) => {
+    try {
+        const response = await axios.patch(`${import.meta.env.VITE_API_URL}/api/update-request`, {
+            request_id: request_id,
+            request_status: 'WITHDRAWN',
+            reason: ''
+        });
+        console.log('Withdrawal response:', response.data);
+        await fetchRequests();
+    } catch (error) {
+        console.error('Error withdrawing request:', error);
+        alert('Error withdrawing request');
+    }
+};
+
+
 const formatDate = (dateString) => {
     return format(new Date(dateString), 'MMM d, yyyy');
 }
 
-// TBA for status indicator
-const filterRequestStatus = (requestStatus) => {
-    filterStatus.value = requestStatus;
-    if (requestStatus === 'All') {
-        filteredRequests.value = requests.value;
-    } else {
-        filteredRequests.value = requests.value.filter(request => request.status === requestStatus.toUpperCase());
-    }
-}
 const getRequestStatus = (requestStatus) => {
     switch (requestStatus) {
         default: return 'badge bg-secondary';
-        case 'PENDING': return 'badge bg-warning text-dark';
+        case 'PENDING': return 'badge bg-warning';
         case 'APPROVED': return 'badge bg-success';
         case 'REJECTED': return 'badge bg-danger';
         case 'EXPIRED':
@@ -136,6 +175,21 @@ const getRequestStatus = (requestStatus) => {
         case 'WITHDRAWN': return 'badge bg-secondary'
     }
 }
+
+const getStatusButtonClass = (requestStatus) => {
+    switch (requestStatus) {
+        case 'Pending':
+            return filterStatus.value === requestStatus ? 'btn-warning' : 'btn-outline-warning';
+        case 'Approved':
+            return filterStatus.value === requestStatus ? 'btn-success' : 'btn-outline-success';
+        case 'Rejected':
+            return filterStatus.value === requestStatus ? 'btn-danger' : 'btn-outline-danger';
+        case 'Others':
+            return filterStatus.value === requestStatus ? 'btn-secondary' : 'btn-outline-secondary';
+        default:
+            return 'btn-outline-secondary';
+    }
+};
 
 onMounted(() => {
     const storedUser = localStorage.getItem('user');
@@ -151,6 +205,11 @@ const errorMessage = ref('');
 </script>
 
 <style scoped>
+.active-filter {
+    background-color: inherit;
+    color: inherit; 
+    border-color: black;
+}
 .dashboard-container {
     display: flex;
     flex-direction: column;
@@ -323,6 +382,14 @@ button:hover {
     border-radius: 4px;
     cursor: pointer;
     transition: background-color 0.2s ease-in-out;
+}
+
+.btn-warning {
+    background-color: #ffc107;
+}
+
+.btn-success {
+    background-color: #28a745;
 }
 
 .btn-danger {
