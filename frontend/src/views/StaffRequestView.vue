@@ -126,22 +126,27 @@ const fetchRequests = async () => {
     }
 }
 
-const cancelRequest = async (request_id) => {
-    try {
-        const response = await axios.patch(`${import.meta.env.VITE_API_URL}/api/update-request`, {
-            request_id: request_id,
-            request_status: 'CANCELLED',
-        });
-        console.log('Cancellation response:', response.data);
-        await fetchRequests();
-    } catch (error) {
-        console.error('Error cancelling request:', error);
-        if (error.response && error.response.data && error.response.data.message) {
-            alert(`Error cancelling request: ${error.response.data.message}`);
-        } else {
-            alert('Error cancelling request');
-        }
-    }
+const cancelRequest = async (request) => {
+    console.log(request);
+    const response = await axios.patch(`${import.meta.env.VITE_API_URL}/api/update-request`, {
+        request_id: request,
+        request_status: 'CANCELLED',
+    });
+    console.log(response.data);
+    //     const response = await axios.patch(`${import.meta.env.VITE_API_URL}/api/update-request`, {
+    //         request_id: request,
+    //         request_status: 'CANCELLED',
+    //     });
+    //     console.log('Cancellation response:', response.data);
+    //     await fetchRequests();
+    // } catch (error) {
+    //     console.error('Error cancelling request:', error);
+    //     if (error.response && error.response.data && error.response.data.message) {
+    //         alert(`Error cancelling request: ${error.response.data.message}`);
+    //     } else {
+    //         alert('Error cancelling request');
+    //     }
+    // }
 };
 
 const withdrawRequest = async (request_id) => {
