@@ -10,6 +10,9 @@
         </ul>
         <ul class="navbar-nav">
           <li class="nav-item">
+            <router-link class="nav-link" to="/request-list">My Requests</router-link>
+          </li>
+          <li class="nav-item">
             <router-link class="nav-link" to="/schedule">My Schedule</router-link>
           </li>
           <li class="nav-item" v-if="user.role==3">
