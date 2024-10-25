@@ -48,11 +48,11 @@
                                             <span :class="getRequestStatus(request.status)">{{ request.status }}</span>
                                         </td>
                                         <td>
-                                            <!-- <button v-if="request.status === 'PENDING'" 
+                                            <button v-if="request.status === 'PENDING'" 
                                                     class="btn btn-danger btn-sm" 
                                                     @click="cancelRequest(request.request_id)">
                                                 Cancel
-                                            </button> -->
+                                            </button>
                                             <button v-if="request.status === 'APPROVED'" 
                                                     class="btn btn-warning btn-sm" 
                                                     @click="withdrawRequest(request.request_id)">
@@ -126,23 +126,23 @@ const fetchRequests = async () => {
     }
 }
 
-// const cancelRequest = async (request_id) => {
-//     try {
-//         const response = await axios.patch(`${import.meta.env.VITE_API_URL}/api/update-request`, {
-//             request_id: request_id,
-//             request_status: 'CANCELLED',
-//         });
-//         console.log('Cancellation response:', response.data);
-//         await fetchRequests();
-//     } catch (error) {
-//         console.error('Error cancelling request:', error);
-//         if (error.response && error.response.data && error.response.data.message) {
-//             alert(`Error cancelling request: ${error.response.data.message}`);
-//         } else {
-//             alert('Error cancelling request');
-//         }
-//     }
-// };
+const cancelRequest = async (request_id) => {
+    try {
+        const response = await axios.patch(`${import.meta.env.VITE_API_URL}/api/update-request`, {
+            request_id: request_id,
+            request_status: 'CANCELLED',
+        });
+        console.log('Cancellation response:', response.data);
+        await fetchRequests();
+    } catch (error) {
+        console.error('Error cancelling request:', error);
+        if (error.response && error.response.data && error.response.data.message) {
+            alert(`Error cancelling request: ${error.response.data.message}`);
+        } else {
+            alert('Error cancelling request');
+        }
+    }
+};
 
 const withdrawRequest = async (request_id) => {
     try {
