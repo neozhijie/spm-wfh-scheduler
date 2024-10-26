@@ -180,19 +180,11 @@ const withdrawRequest = async (request_id) => {
             request_status: 'WITHDRAWN',
             reason: ''
         });
-
-        // Check if the response indicates success
-        if (response.status === 200 || response.data.success) {
-            console.log('Withdrawal response:', response.data);
-            await fetchRequests(); // Refresh requests to reflect changes
-        } else {
-            // Handle specific response failures if your API provides such info
-            console.error('Error in withdrawal response:', response.data);
-            alert('Failed to withdraw the request. Please try again.');
-        }
+        console.log('Withdrawal response:', response.data);
+        await fetchRequests();
     } catch (error) {
         console.error('Error withdrawing request:', error);
-        alert('Error withdrawing request: ' + (error.response?.data?.message || error.message));
+        alert('Error withdrawing request');
     }
 };
 
