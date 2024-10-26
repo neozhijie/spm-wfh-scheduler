@@ -18,10 +18,17 @@
           <li class="nav-item" v-if="user.role==3">
             <router-link class="nav-link" to="/teamschedule-manager">Team Schedule</router-link>
           </li>
+          <li class="nav-item" v-if="user.role==1 && user.position!='MD'">
+            <router-link class="nav-link" to="/teamschedule-director">Team Schedule</router-link>
+          </li>
           <li class="nav-item" v-if="user.role==2">
             <router-link class="nav-link" to="/teamschedule-staff">Team Schedule</router-link>
           </li>
-          <li class="nav-item" v-if="user.role==2 || user.role==3 || user.dept=='HR'">
+          <li class="nav-item" v-if="user.role==1">
+            <router-link class="nav-link" to="/overallschedule">Overall Schedule</router-link>
+          </li>
+
+          <li class="nav-item">
             <router-link class="nav-link" to="/application">Apply</router-link>
           </li>
           <li class="nav-item" v-if="user.position=='Director' || user.role==3 || user.position=='MD'">

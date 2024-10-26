@@ -7,6 +7,7 @@ import ManagerScheduleView from '@/views/ManagerTeamScheduleView.vue'
 import TeamScheduleView from '@/views/StaffTeamScheduleView.vue'
 import HRScheduleView from '@/views/HRScheduleView.vue'
 import StaffRequestView from '@/views/StaffRequestView.vue'
+import DirectorTeamScheduleView from '@/views/DirectorTeamScheduleView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -47,8 +48,8 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/wholeschedule-hr',
-      name: 'wholeschedule',
+      path: '/overallschedule',
+      name: 'overallschedule',
       component: HRScheduleView,
       meta: { requiresAuth: true }
     },
@@ -57,6 +58,12 @@ const router = createRouter({
       name: 'request-list',
       component: StaffRequestView,
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/teamschedule-director',
+      name: 'directorschedule',
+      component: DirectorTeamScheduleView,
+      meta: {requiresAuth: true}
     },
     // ... other routes ...
   ]
