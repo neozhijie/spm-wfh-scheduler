@@ -8,17 +8,15 @@
                     <div class="header">
                         <h2 class="h4 mb-0 fw-bold">My WFH Requests</h2>
                     </div>
-                <div class="filter-buttons d-flex justify-content-start align-items-center my-3">
-                    <div v-for="status in statuses" :key="status" class="me-2">
-                        <button 
-                            @click="filterStatus = status" 
-                            :class="['btn',getStatusButtonClass(status)]">
-                            {{ status }}
-                        </button>
+                    <div class="filter-buttons d-flex justify-content-start align-items-center my-3">
+                        <div v-for="status in statuses" :key="status" class="me-2">
+                            <button @click="filterStatus = status" :class="['btn', getStatusButtonClass(status)]">
+                                {{ status }}
+                            </button>
+                        </div>
                     </div>
-                </div>
                     <div v-if="isLoaded" class="card-body shadow">
-                        <div v-if="filteredRequests.length>0" class="table">
+                        <div v-if="filteredRequests.length > 0" class="table">
                             <table class="table table-hover">
                                 <thead class="thead-light">
                                     <tr>
@@ -38,24 +36,26 @@
                                         <td>{{ request.end_date ? formatDate(request.end_date) : '-' }}</td>
                                         <td>{{ request.reason_for_applying }}</td>
                                         <td>
-                                            <span v-if="request.is_recurring" class="badge bg-info ms-1">Recurring</span>
+                                            <span v-if="request.is_recurring"
+                                                class="badge bg-info ms-1">Recurring</span>
                                             <span v-else class="badge bg-primary ms-1">Ad-hoc</span>
-                                            <span v-if="request.duration === 'FULL_DAY'" class="badge bg-success ms-1">FULL DAY</span>
-                                            <span v-else-if="request.duration === 'HALF_DAY_AM'" class="badge bg-warning text-dark ms-1">AM</span>
-                                            <span v-else-if="request.duration === 'HALF_DAY_PM'" class="badge bg-warning text-dark ms-1">PM</span>
+                                            <span v-if="request.duration === 'FULL_DAY'"
+                                                class="badge bg-success ms-1">FULL DAY</span>
+                                            <span v-else-if="request.duration === 'HALF_DAY_AM'"
+                                                class="badge bg-warning text-dark ms-1">AM</span>
+                                            <span v-else-if="request.duration === 'HALF_DAY_PM'"
+                                                class="badge bg-warning text-dark ms-1">PM</span>
                                         </td>
                                         <td>
                                             <span :class="getRequestStatus(request.status)">{{ request.status }}</span>
                                         </td>
                                         <td>
-                                            <button v-if="request.status === 'PENDING'" 
-                                                    class="btn btn-danger btn-sm" 
-                                                    @click="cancelRequest(request.request_id)">
+                                            <button v-if="request.status === 'PENDING'" class="btn btn-danger btn-sm"
+                                                @click="cancelRequest(request.request_id)">
                                                 Cancel
                                             </button>
-                                            <button v-if="request.status === 'APPROVED'" 
-                                                    class="btn btn-warning btn-sm" 
-                                                    @click="withdrawRequest(request.request_id)">
+                                            <button v-if="request.status === 'APPROVED'" class="btn btn-warning btn-sm"
+                                                @click="withdrawRequest(request.request_id)">
                                                 Withdraw
                                             </button>
                                         </td>
@@ -64,9 +64,9 @@
 
                             </table>
                         </div>
-                    <p v-else class="text-muted">
-                        No {{ filterStatus === 'All' ? '' : filterStatus }} requests found.
-                    </p>
+                        <p v-else class="text-muted">
+                            No {{ filterStatus === 'All' ? '' : filterStatus }} requests found.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -94,7 +94,7 @@ const filteredRequests = computed(() => {
     if (filterStatus.value === 'All') {
         return allRequests.value;
     } else if (filterStatus.value === 'Others') {
-        return allRequests.value.filter(request => 
+        return allRequests.value.filter(request =>
             ['EXPIRED', 'CANCELLED', 'WITHDRAWN'].includes(request.status)
         );
     } else {
@@ -138,11 +138,12 @@ const cancelRequest = async (request_id) => {
     // const response = await axios.patch(`${import.meta.env.VITE_API_URL}/api/update-request/`);
     // console.log('response:', response);
     // console.log('request to be cancelled:', response);
-    
+
     try {
         const response = await axios.patch(`${import.meta.env.VITE_API_URL}/api/update-request`, {
             request_id: request_id,
-            request_status: 'CANCELLED'
+            request_status: 'CANCELLED',
+            reason: ''
         });
         console.log('Cancellation response:', response.data);
         await fetchRequests();
@@ -156,7 +157,8 @@ const withdrawRequest = async (request_id) => {
     try {
         const response = await axios.patch(`${import.meta.env.VITE_API_URL}/api/update-request`, {
             request_id: request_id,
-            request_status: 'WITHDRAWN'
+            request_status: 'WITHDRAWN',
+            reason: ''
         });
         console.log('Withdrawal response:', response.data);
         await fetchRequests();
@@ -214,9 +216,10 @@ const errorMessage = ref('');
 <style scoped>
 .active-filter {
     background-color: inherit;
-    color: inherit; 
+    color: inherit;
     border-color: black;
 }
+
 .dashboard-container {
     display: flex;
     flex-direction: column;
