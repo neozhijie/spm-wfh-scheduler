@@ -54,10 +54,17 @@
                                                 @click="cancelRequest(request.request_id)">
                                                 Cancel
                                             </button>
-                                            <button v-if="request.status === 'APPROVED'" class="btn btn-warning btn-sm"
-                                                @click="withdrawRequest(request.request_id)">
-                                                Withdraw
-                                            </button>
+                                            <button
+                                            v-if="request.status === 'APPROVED'"
+                                            :class="{
+                                                'btn btn-warning btn-sm': isWithinWithdrawalPeriod(request.start_date),
+                                                'btn btn-secondary btn-sm': !isWithinWithdrawalPeriod(request.start_date)
+                                            }"
+                                            @click="isWithinWithdrawalPeriod(request.start_date) ? withdrawRequest(request.request_id) : null"
+                                            :disabled="!isWithinWithdrawalPeriod(request.start_date)"
+                                        >
+                                            Withdraw
+                                        </button>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -153,6 +160,19 @@ const cancelRequest = async (request_id) => {
     }
 };
 
+const isWithinWithdrawalPeriod = (applicationDate) => {
+    const appDate = new Date(applicationDate);
+    const today = new Date();
+
+    const twoWeeksBefore = new Date(today);
+    twoWeeksBefore.setDate(today.getDate() - 14);
+
+    const twoWeeksAfter = new Date(today);
+    twoWeeksAfter.setDate(today.getDate() + 14);
+
+    return appDate >= twoWeeksBefore && appDate <= twoWeeksAfter;
+};
+
 const withdrawRequest = async (request_id) => {
     try {
         const response = await axios.patch(`${import.meta.env.VITE_API_URL}/api/update-request`, {
@@ -160,13 +180,23 @@ const withdrawRequest = async (request_id) => {
             request_status: 'WITHDRAWN',
             reason: ''
         });
-        console.log('Withdrawal response:', response.data);
-        await fetchRequests();
+
+        // Check if the response indicates success
+        if (response.status === 200 || response.data.success) {
+            console.log('Withdrawal response:', response.data);
+            await fetchRequests(); // Refresh requests to reflect changes
+        } else {
+            // Handle specific response failures if your API provides such info
+            console.error('Error in withdrawal response:', response.data);
+            alert('Failed to withdraw the request. Please try again.');
+        }
     } catch (error) {
         console.error('Error withdrawing request:', error);
-        alert('Error withdrawing request');
+        alert('Error withdrawing request: ' + (error.response?.data?.message || error.message));
     }
 };
+
+
 
 
 const formatDate = (dateString) => {
@@ -419,4 +449,6 @@ button:hover {
 .btn-secondary:hover {
     background-color: #5a6268;
 }
+
+
 </style>
