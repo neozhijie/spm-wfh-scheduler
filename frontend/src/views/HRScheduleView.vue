@@ -52,7 +52,7 @@
                     @click="toggleManager('AM', managerId)"
                   >
                     <div class="manager-header">
-                      <h3>{{ manager.managerName }}</h3>
+                      <h3>{{ manager.managerName  + "'s team"}}</h3>
                       <div class="badge-container">
                         <span class="badge badge-office">
                           In Office: {{ manager.inOffice }}/{{ manager.total }}
@@ -645,17 +645,18 @@
               }
 
 
-              if (staff[`status_${period.toLowerCase()}`] === 'OFFICE') {
-                groupedData[period].managers[staff.staff_id].inOffice += 1;
-                groupedData[period].inOffice += 1;
-              } else {
-                groupedData[period].managers[staff.staff_id].wfh += 1;
-                groupedData[period].wfh += 1;
-              }
-              groupedData[period].managers[staff.staff_id].total += 1;
+              // if (staff[`status_${period.toLowerCase()}`] === 'OFFICE') {
+              //   groupedData[period].managers[staff.staff_id].inOffice += 1;
+              //   groupedData[period].inOffice += 1;
+              // } else {
+              //   groupedData[period].managers[staff.staff_id].wfh += 1;
+              //   groupedData[period].wfh += 1;
+              // }
+              // groupedData[period].managers[staff.staff_id].total += 1;
             }
 
-            if (staff.manager_id in groupedData[period].managers && staff.role !== 3) {
+            if (staff.role !== 3){
+            if (staff.manager_id in groupedData[period].managers) {
               if (staff[`status_${period.toLowerCase()}`] === 'OFFICE') {
                 groupedData[period].managers[staff.manager_id].inOffice += 1;
                 groupedData[period].inOffice += 1;
@@ -673,8 +674,28 @@
                 name: staff.name,
                 status: staff[`status_${period.toLowerCase()}`]
               });
+            }}else{
+            if (staff.staff_id in groupedData[period].managers) {
+              if (staff[`status_${period.toLowerCase()}`] === 'OFFICE') {
+                groupedData[period].managers[staff.staff_id].inOffice += 1;
+                groupedData[period].inOffice += 1;
+              } else {
+                groupedData[period].managers[staff.staff_id].wfh += 1;
+                groupedData[period].wfh += 1;
+              }
+              groupedData[period].managers[staff.staff_id].total += 1;
+
+              if (!groupedData[period].managers[staff.staff_id].positions[position]) {
+                groupedData[period].managers[staff.staff_id].positions[position] = { staff: [] };
+              }
+              groupedData[period].managers[staff.staff_id].positions[position].staff.push({
+                staff_id: staff.staff_id,
+                name: staff.name,
+                status: staff[`status_${period.toLowerCase()}`]
+              });
             }
-          } else { 
+          }
+        }else { 
             if (!groupedData[period].teams[position]) {
               groupedData[period].teams[position] = { teamName: position, inOffice: 0, wfh: 0, total: 0, staff: [] };
             }
@@ -692,8 +713,7 @@
               name: staff.name,
               status: staff[`status_${period.toLowerCase()}`]
             });
-          }
-        });
+          }});
       };
 
       processStaff('AM');
@@ -1025,16 +1045,17 @@ function togglePosition(timeOfDay, managerId, positionName) {
   }
   .position.card {
     transition: background-color 0.2s ease;
+    gap: 0.5rem
   }
 
   .position.card:hover {
     background-color: #f0f4ff;
   }
 
-  .positions {
+  .position-list {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.5rem;
   }
 
   .position {
@@ -1051,6 +1072,7 @@ function togglePosition(timeOfDay, managerId, positionName) {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 0.75rem;
+    gap: 0.5rem;
   }
 
   .position-header h3 {
@@ -1262,6 +1284,7 @@ function togglePosition(timeOfDay, managerId, positionName) {
     padding: 0.5rem 0.75rem;
     background-color: #f9fafb;
     transition: background-color 0.2s ease;
+    gap: 0.5rem
   }
 
   .employee-card:hover {
