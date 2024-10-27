@@ -36,15 +36,11 @@
                                         <td>{{ request.end_date ? formatDate(request.end_date) : '-' }}</td>
                                         <td>{{ request.reason_for_applying }}</td>
                                         <td>
-                                            <span v-if="request.is_recurring"
-                                                class="badge bg-info ms-1">Recurring</span>
+                                            <span v-if="request.is_recurring" class="badge bg-info ms-1">Recurring</span>
                                             <span v-else class="badge bg-primary ms-1">Ad-hoc</span>
-                                            <span v-if="request.duration === 'FULL_DAY'"
-                                                class="badge bg-success ms-1">FULL DAY</span>
-                                            <span v-else-if="request.duration === 'HALF_DAY_AM'"
-                                                class="badge bg-warning text-dark ms-1">AM</span>
-                                            <span v-else-if="request.duration === 'HALF_DAY_PM'"
-                                                class="badge bg-warning text-dark ms-1">PM</span>
+                                            <span v-if="request.duration === 'FULL_DAY'" class="badge bg-success ms-1">FULL DAY</span>
+                                            <span v-else-if="request.duration === 'HALF_DAY_AM'" class="badge bg-warning text-dark ms-1">AM</span>
+                                            <span v-else-if="request.duration === 'HALF_DAY_PM'" class="badge bg-warning text-dark ms-1">PM</span>
                                         </td>
                                         <td>
                                             <span :class="getRequestStatus(request.status)">{{ request.status }}</span>
@@ -55,21 +51,57 @@
                                                 Cancel
                                             </button>
                                             <button
-                                            v-if="request.status === 'APPROVED'"
-                                            :class="{
-                                                'btn btn-warning btn-sm': isWithinWithdrawalPeriod(request.start_date),
-                                                'btn btn-secondary btn-sm': !isWithinWithdrawalPeriod(request.start_date)
-                                            }"
-                                            @click="isWithinWithdrawalPeriod(request.start_date) ? withdrawRequest(request.request_id) : null"
-                                            :disabled="!isWithinWithdrawalPeriod(request.start_date)"
-                                        >
-                                            Withdraw
-                                        </button>
+                                                v-if="request.status === 'APPROVED'"
+                                                :class="{
+                                                    'btn btn-warning btn-sm': isWithinWithdrawalPeriod(request.start_date),
+                                                    'btn btn-secondary btn-sm': !isWithinWithdrawalPeriod(request.start_date)
+                                                }"
+                                                @click="openRejectForm(request)"
+              
+                                                :disabled="!isWithinWithdrawalPeriod(request.start_date)"
+                                            >
+                                                Withdraw
+                                            </button>
                                         </td>
                                     </tr>
                                 </tbody>
-
                             </table>
+                            <div v-if="showForm" class="form-overlay">
+                                <div class="form-container">
+                                    <div class="form-header">
+                                        <h3 class="form-title">Withdraw WFH Request</h3>
+                                    </div>
+                                    <div class="table-wrapper">
+                                        <table class="table table-bordered" style="overflow:scroll;">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th>Date Requested</th>
+                                                    <th>Start Date</th>
+                                                    <th>End Date</th>
+                                                    <th>Reason</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>{{ formatDate(selectedRequest.request_date) }}</td>
+                                                    <td>{{ formatDate(selectedRequest.start_date) }}</td>
+                                                    <td>{{ selectedRequest.end_date ? formatDate(selectedRequest.end_date) : '-' }}</td>
+                                                    <td>{{ selectedRequest.reason_for_applying }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="form-group text-left px-5">
+                                        <label for="rej_reason" class="form-label">Reason for withdrawal:</label>
+                                        <textarea id="rej_reason" v-model="rej_reason" required class="form-control w-100" rows="3"></textarea>
+                                    </div>
+                                    <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+                                    <div class="form-actions">
+                                        <button type="button" @click="withdrawRequest" class="btn btn-danger">Withdraw</button>
+                                        <button type="button" @click="closeForm" class="btn btn-secondary">Cancel</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <p v-else class="text-muted">
                             No {{ filterStatus === 'All' ? '' : filterStatus }} requests found.
@@ -94,6 +126,8 @@ const isLoaded = ref(false);
 const filterStatus = ref('All');;
 // const statuses = ['All', 'Pending', 'Approved', 'Rejected', 'Expired', 'Cancelled', 'Withdrawn'];
 const statuses = ['All', 'Pending', 'Approved', 'Rejected', 'Others'];
+const showForm = ref(false);
+const rej_reason = ref('');
 
 
 // error here
@@ -173,14 +207,44 @@ const isWithinWithdrawalPeriod = (applicationDate) => {
     return appDate >= twoWeeksBefore && appDate <= twoWeeksAfter;
 };
 
+const openRejectForm = (request) => {
+  // Log the request to inspect the data passed
+  console.log('Request data:', request);
+
+  // Check if the request object and date fields are defined
+  if (!request || !request.request_date || !request.start_date) {
+    console.error('Invalid request data:', request);
+
+    return;
+  }
+
+  // Assign the selected request and open the form
+  selectedRequest.value = request;
+  showForm.value = true;
+};
+
+const closeForm = () => {
+  showForm.value = false;
+  rej_reason.value = '';
+  errorMessage.value = '';
+  };
+
 const withdrawRequest = async (request_id) => {
+    if (!rej_reason.value.trim()) {
+        errorMessage.value = 'Please provide a reason for rejection.';
+        return;
+    }
+
+    errorMessage.value = '';
     try {
         const response = await axios.patch(`${import.meta.env.VITE_API_URL}/api/update-request`, {
-            request_id: request_id,
+            request_id: selectedRequest.value.request_id,
             request_status: 'WITHDRAWN',
-            reason: ''
+            reason: rej_reason.value
         });
+
         console.log('Withdrawal response:', response.data);
+        closeForm();
         await fetchRequests();
     } catch (error) {
         console.error('Error withdrawing request:', error);
