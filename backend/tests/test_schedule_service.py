@@ -758,8 +758,7 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
             self.assertEqual(date_data['office_count_am'], 0)
             self.assertEqual(date_data['office_count_pm'], 0)
 
-    def test_hr_no_schedules(self):
-        """Test HR schedule summary when no WFH schedules are present."""
+    def test_hr_no_schedules_overview(self):
         start_date = datetime.now().date()
         end_date = start_date + timedelta(days=5)
         result = WFHScheduleService.get_hr_schedule_summary(start_date, end_date)
@@ -779,7 +778,7 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
 
         self.assertEqual(result['dates'], expected_dates)
 
-    def test_get_hr_schedule_summary(self):
+    def test_get_hr_schedule_overview(self):
         # Set up the dates for testing
         start_date = datetime.now().date()
         end_date = start_date + timedelta(days=2)
@@ -845,8 +844,7 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
                 self.assertEqual(date['office_count_pm'], 4)
             self.assertEqual(date['total_staff'], 5)
 
-    def test_hr_no_staff(self):
-        """Test HR schedule summary when no staff are present."""
+    def test_hr_no_staff_overview(self):
         # Clear all WFH schedules and staff records
         db.session.query(WFHSchedule).delete()
         db.session.query(Staff).delete()
@@ -858,6 +856,142 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
 
         # Expected: No schedules, no staff
         self.assertEqual(result['dates'], [])
+
+    def test_hr_no_schedule_detail(self):
+        date = datetime.now().date()
+        result = WFHScheduleService.get_hr_schedule_detail(date)
+        wfh_count_am = 0
+        wfh_count_pm = 0
+        
+        # Calculate WFH counts directly within the test
+        for staff in result['staff']:
+            if staff['status_am'] == "WFH":
+                wfh_count_am += 1
+            if staff['status_pm'] == "WFH":
+                wfh_count_pm += 1
+
+        # Define expected counts
+        expected_counts = {
+            "wfh_count_am": 0,  # No WFH in AM
+            "wfh_count_pm": 0   # No WFH in PM
+        }
+
+        # Assert the calculated counts
+        self.assertEqual(wfh_count_am, expected_counts["wfh_count_am"])
+        self.assertEqual(wfh_count_pm, expected_counts["wfh_count_pm"])
+
+    def test_hr_schedule_detail_full_day(self):
+        date = datetime.now().date()
+        wfh_schedule= WFHSchedule(
+            request_id=1,
+            staff_id=self.staff2.staff_id,
+            manager_id=self.staff2.reporting_manager,
+            date=date,
+            duration='FULL_DAY',
+            status='APPROVED',
+            dept=self.staff2.dept,
+            position=self.staff2.position
+        )
+        db.session.add(wfh_schedule)
+        db.session.commit()
+        result = WFHScheduleService.get_hr_schedule_detail(date)
+        wfh_count_am = 0
+        wfh_count_pm = 0
+        
+        # Calculate WFH counts directly within the test
+        for staff in result['staff']:
+            if staff['status_am'] == "WFH":
+                wfh_count_am += 1
+            if staff['status_pm'] == "WFH":
+                wfh_count_pm += 1
+
+        # Define expected counts
+        expected_counts = {
+            "wfh_count_am": 1,  
+            "wfh_count_pm": 1   
+        }
+
+        # Assert the calculated counts
+        self.assertEqual(wfh_count_am, expected_counts["wfh_count_am"])
+        self.assertEqual(wfh_count_pm, expected_counts["wfh_count_pm"])
+
+    def test_hr_schedule_detail_am(self):
+        date = datetime.now().date()
+        wfh_schedule= WFHSchedule(
+            request_id=1,
+            staff_id=self.staff2.staff_id,
+            manager_id=self.staff2.reporting_manager,
+            date=date,
+            duration='HALF_DAY_AM',
+            status='APPROVED',
+            dept=self.staff2.dept,
+            position=self.staff2.position
+        )
+        db.session.add(wfh_schedule)
+        db.session.commit()
+        result = WFHScheduleService.get_hr_schedule_detail(date)
+        wfh_count_am = 0
+        wfh_count_pm = 0
+        
+        # Calculate WFH counts directly within the test
+        for staff in result['staff']:
+            if staff['status_am'] == "WFH":
+                wfh_count_am += 1
+            if staff['status_pm'] == "WFH":
+                wfh_count_pm += 1
+
+        # Define expected counts
+        expected_counts = {
+            "wfh_count_am": 1,
+            "wfh_count_pm": 0  
+        }
+
+        # Assert the calculated counts
+        self.assertEqual(wfh_count_am, expected_counts["wfh_count_am"])
+        self.assertEqual(wfh_count_pm, expected_counts["wfh_count_pm"])
+
+    def test_hr_schedule_detail_pm(self):
+        date = datetime.now().date()
+        wfh_schedule= WFHSchedule(
+            request_id=1,
+            staff_id=self.staff2.staff_id,
+            manager_id=self.staff2.reporting_manager,
+            date=date,
+            duration='HALF_DAY_PM',
+            status='APPROVED',
+            dept=self.staff2.dept,
+            position=self.staff2.position
+        )
+        db.session.add(wfh_schedule)
+        db.session.commit()
+        result = WFHScheduleService.get_hr_schedule_detail(date)
+        wfh_count_am = 0
+        wfh_count_pm = 0
+        
+        # Calculate WFH counts directly within the test
+        for staff in result['staff']:
+            if staff['status_am'] == "WFH":
+                wfh_count_am += 1
+            if staff['status_pm'] == "WFH":
+                wfh_count_pm += 1
+
+        # Define expected counts
+        expected_counts = {
+            "wfh_count_am": 0,  
+            "wfh_count_pm": 1  
+        }
+
+        # Assert the calculated counts
+        self.assertEqual(wfh_count_am, expected_counts["wfh_count_am"])
+        self.assertEqual(wfh_count_pm, expected_counts["wfh_count_pm"])
+
+    def test_hr_no_staff_detail(self):
+        db.session.query(WFHSchedule).delete()
+        db.session.query(Staff).delete()
+        db.session.commit()
+        date = datetime.now().date()
+        result = WFHScheduleService.get_hr_schedule_detail(date)
+        self.assertEqual(result, {'date': date.isoformat(), 'staff': []})
 
 if __name__ == "__main__":
     unittest.main()

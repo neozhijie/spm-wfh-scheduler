@@ -358,3 +358,14 @@ def hr_schedule_summary():
     except Exception as e:
         print(f"Error in hr_schedule_summary: {str(e)}")
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+
+@wfh_bp.route('/hr-schedule-detail/<date>', methods=['GET'])
+def hr_schedule_detail(date):
+    try:
+        date_obj = datetime.strptime(date, '%Y-%m-%d').date()
+        data = WFHScheduleService.get_hr_schedule_detail(date_obj)
+        print("Success")
+        return jsonify(data), 200
+    except Exception as e:
+        print(f"Error in staff_schedule_detail: {str(e)}")
+        return jsonify({"message": f"An error occurred: {str(e)}"}), 500

@@ -482,4 +482,46 @@ class WFHScheduleService:
                 'office_count_am': office_count_am,
                 'office_count_pm': office_count_pm
             })
+            
         return {'dates': dates_data}
+    
+    @staticmethod
+    def get_hr_schedule_detail(date):
+        staff_list = Staff.query.all()
+        staff_ids = [staff.staff_id for staff in staff_list]
+        total_staff = len(staff_ids)
+        if total_staff <= 0:
+            return {'date': date.isoformat(), 'staff': []}
+        
+        staff_status = {}
+        for staff in staff_list:
+            staff_status[staff.staff_id] = {
+                'staff_id': staff.staff_id,
+                'name': f"{staff.staff_fname} {staff.staff_lname}",
+                'position': staff.position,
+                'status_am': 'OFFICE',
+                'status_pm': 'OFFICE'
+            }
+        print(staff_status)
+
+        schedules = WFHSchedule.query.filter(
+            WFHSchedule.staff_id.in_(staff_ids),
+            WFHSchedule.date == date,
+            WFHSchedule.status == 'APPROVED'
+        ).all()
+
+        for sched in schedules:
+            if sched.duration == 'FULL_DAY':
+                staff_status[sched.staff_id]['status_am'] = 'WFH'
+                staff_status[sched.staff_id]['status_pm'] = 'WFH'
+            elif sched.duration == 'HALF_DAY_AM':
+                staff_status[sched.staff_id]['status_am'] = 'WFH'
+            elif sched.duration == 'HALF_DAY_PM':
+                staff_status[sched.staff_id]['status_pm'] = 'WFH'
+
+        staff_list_status = list(staff_status.values())
+
+        return {
+            'date': date.isoformat(),
+            'staff': staff_list_status
+        }
