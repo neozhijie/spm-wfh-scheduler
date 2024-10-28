@@ -8,13 +8,16 @@
                     <div class="header">
                         <h2 class="h4 mb-0 fw-bold">My WFH Requests</h2>
                     </div>
-                    <div class="filter-buttons d-flex justify-content-start align-items-center my-3">
-                        <div v-for="status in statuses" :key="status" class="me-2">
-                            <button @click="filterStatus = status" :class="['btn', getStatusButtonClass(status)]">
-                                {{ status }}
-                            </button>
-                        </div>
-                    </div>
+                    <div class="filter-buttons d-flex justify-content-start align-items-center my-4 px-3">
+    <div class="toggle-container">
+        <div v-for="status in statuses" 
+             :key="status" 
+             @click="filterStatus = status" 
+             :class="['toggle-button', {'active': filterStatus === status}]">
+            {{ status }}
+        </div>
+    </div>
+</div>
                     <div v-if="isLoaded" class="card-body shadow">
                         <div v-if="filteredRequests.length > 0" class="table">
                             <table class="table table-hover">
@@ -110,7 +113,29 @@
                 </div>
             </div>
         </div>
+
+<!-- Cancel Confirmation Modal -->
+<div v-if="showCancelConfirmation" class="form-overlay">
+    <div class="form-container" style="width: 400px;">
+        <div class="form-header">
+            <h3 class="form-title">Confirm Cancellation</h3>
+        </div>
+        <div class="p-4">
+            <p class="mb-4">Are you sure you want to cancel this WFH request?</p>
+            <p class="text-muted small mb-4">This action cannot be undone.</p>
+            <div class="form-actions">
+                <button type="button" @click="confirmCancel" class="btn btn-danger">
+                    Yes, Cancel Request
+                </button>
+                <button type="button" @click="closeCancelConfirmation" class="btn btn-secondary">
+                    No, Keep Request
+                </button>
+            </div>
+        </div>
     </div>
+</div>
+    </div>
+
 </template>
 
 <script setup>
@@ -128,6 +153,8 @@ const filterStatus = ref('All');;
 const statuses = ['All', 'Pending', 'Approved', 'Rejected', 'Others'];
 const showForm = ref(false);
 const rej_reason = ref('');
+const showCancelConfirmation = ref(false);
+const requestToCancel = ref(null);
 
 
 // error here
@@ -166,32 +193,33 @@ const fetchRequests = async () => {
         isLoaded.value = true;
     }
 }
-// TODO: modify such that its status on ScheduleView.vue is *CANCELLED or *WITHDRAWN
-const cancelRequest = async (request_id) => {
+// Cancel pending request
+const cancelRequest = (request_id) => {
+    requestToCancel.value = request_id;
+    showCancelConfirmation.value = true;
+};
 
-    // console.log('request_id:', request_id);
-
-    // const userData = JSON.parse(localStorage.getItem('user'));
-    // console.log('userData:', userData);
-
-    // console.log()
-
-    // const response = await axios.patch(`${import.meta.env.VITE_API_URL}/api/update-request/`);
-    // console.log('response:', response);
-    // console.log('request to be cancelled:', response);
-
+// Handle the actual cancellation
+const confirmCancel = async () => {
     try {
         const response = await axios.patch(`${import.meta.env.VITE_API_URL}/api/update-request`, {
-            request_id: request_id,
+            request_id: requestToCancel.value,
             request_status: 'CANCELLED',
             reason: ''
         });
         console.log('Cancellation response:', response.data);
+        showCancelConfirmation.value = false;
         await fetchRequests();
     } catch (error) {
         console.error('Error cancelling request:', error);
         alert('Error cancelling request');
     }
+};
+
+// Close the confirmation modal
+const closeCancelConfirmation = () => {
+    showCancelConfirmation.value = false;
+    requestToCancel.value = null;
 };
 
 const isWithinWithdrawalPeriod = (applicationDate) => {
@@ -505,6 +533,108 @@ button:hover {
 .btn-secondary:hover {
     background-color: #5a6268;
 }
+.form-container.small {
+    width: 400px;
+}
+
+.form-actions .btn {
+    width: auto;
+    margin-bottom: 0;
+}
+
+.text-muted {
+    color: #6c757d;
+}
+
+.small {
+    font-size: 0.875rem;
+}
 
 
+.filter-buttons {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    scrollbar-width: none; /* Hide scrollbar for Firefox */
+    -ms-overflow-style: none; /* Hide scrollbar for IE/Edge */
+}
+
+.filter-buttons::-webkit-scrollbar {
+    display: none; /* Hide scrollbar for Chrome/Safari */
+}
+
+.toggle-container {
+    display: flex;
+    background-color: #f0f2f5;
+    padding: 0.3rem;
+    border-radius: 12px;
+    gap: 0.3rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    min-width: fit-content; /* Ensures buttons don't shrink too much */
+}
+
+.toggle-button {
+    padding: 0.5rem 1.2rem;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    color: #666;
+    user-select: none;
+    white-space: nowrap; /* Prevents text wrapping */
+    min-width: max-content; /* Ensures text doesn't get cut off */
+}
+
+/* Media queries for different screen sizes */
+@media screen and (max-width: 768px) {
+    .toggle-button {
+        padding: 0.4rem 1rem;
+        font-size: 0.85rem;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .filter-buttons {
+        padding: 0 0.5rem !important;
+    }
+    
+    .toggle-container {
+        padding: 0.6rem;
+        gap: 0.4rem;
+    }
+    
+    .toggle-button {
+        padding: 0.35rem 0.8rem;
+        font-size: 0.8rem;
+    }
+}
+
+/* Rest of your existing toggle-button styles remain the same */
+.toggle-button:hover {
+    background-color: rgba(255, 255, 255, 0.8);
+    color: #333;
+}
+
+.toggle-button.active {
+    background-color: white;
+    color: #141b4d;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-button.active:has(:contains("Pending")) {
+    color: #ffc107;
+}
+
+.toggle-button.active:has(:contains("Approved")) {
+    color: #28a745;
+}
+
+.toggle-button.active:has(:contains("Rejected")) {
+    color: #dc3545;
+}
+
+.toggle-button.active:has(:contains("Others")) {
+    color: #6c757d;
+}
 </style>
