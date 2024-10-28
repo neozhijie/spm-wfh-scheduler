@@ -89,3 +89,7 @@ class StaffService:
         except ValueError as e:
             print(str(e))
             raise
+
+    def get_departments():
+        departments = Staff.query.with_entities(Staff.dept).distinct().all()
+        return [dept[0] for dept in departments] if departments else []

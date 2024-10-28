@@ -367,5 +367,5 @@ def hr_schedule_detail(date):
         print("Success")
         return jsonify(data), 200
     except Exception as e:
-        print(f"Error in staff_schedule_detail: {str(e)}")
+        print(f"Error in hr_schedule_detail: {str(e)}")
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
