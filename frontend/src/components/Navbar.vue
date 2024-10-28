@@ -1,5 +1,6 @@
 <template>
-  <nav class="navbar navbar-expand-lg custom-navbar">
+  <div :style="{ height: `${navbarHeight}px` }"></div>
+  <nav class="navbar navbar-expand-lg custom-navbar" ref="navbar">
     <div class="container-fluid">
       <a class="navbar-brand" href="#">WFH Scheduler</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
@@ -55,7 +56,25 @@ import { useRouter } from 'vue-router';
 
 const router = useRouter();
 const user = ref({});
+const navbar = ref(null);
+const navbarHeight = ref(0);
 
+
+const updateNavbarHeight = () => {
+  if (navbar.value) {
+    navbarHeight.value = navbar.value.offsetHeight;
+  }
+};
+
+// Create a ResizeObserver to watch navbar dimensions
+const resizeObserver = new ResizeObserver(() => {
+  updateNavbarHeight();
+});
+
+// Handle window resize
+const handleResize = () => {
+  updateNavbarHeight();
+};
 const updateUserFromStorage = () => {
   const storedUser = localStorage.getItem('user');
   if (storedUser) {
@@ -66,7 +85,13 @@ const updateUserFromStorage = () => {
 };
 
 onMounted(() => {
+  updateNavbarHeight();
   updateUserFromStorage();
+  window.addEventListener('resize', handleResize);
+    // Observe navbar element
+    if (navbar.value) {
+    resizeObserver.observe(navbar.value);
+  }
 
   // Listen for storage events (in case user logs in in another tab)
   window.addEventListener('storage', (event) => {
@@ -86,6 +111,9 @@ const logout = () => {
   user.value = {};
   router.push('/');
 };
+
+
+
 </script>
 
 <style scoped>
@@ -95,6 +123,11 @@ const logout = () => {
 
 .custom-navbar {
   background-color: #141b4d;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
 }
 
 .navbar-brand,

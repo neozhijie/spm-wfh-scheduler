@@ -1132,6 +1132,7 @@
     padding: 0.75rem;
     margin-left: 1rem; /* Indent sub-teams */
     cursor: pointer;
+    margin-bottom: 1rem;
   }
   
   .sub-team .team-header h4 {

@@ -347,8 +347,7 @@ const errorMessage = ref('');
 
 .header {
     color: #141b4d;
-    padding-top: 4rem;
-    padding-bottom: 2rem;
+    padding-top: 1rem;
 }
 
 .card {

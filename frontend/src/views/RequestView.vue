@@ -91,6 +91,26 @@
         </div>
       </div>
     </div>
+    <!-- Approve Confirmation Modal -->
+<div v-if="showApproveConfirmation" class="form-overlay">
+    <div class="form-container" style="width: 400px;">
+        <div class="form-header">
+            <h3 class="form-title">Confirm Approval</h3>
+        </div>
+        <div class="p-4">
+            <p class="mb-4">Are you sure you want to approve this WFH request?</p>
+            <p class="text-muted small mb-4">This action cannot be undone.</p>
+            <div class="form-actions">
+                <button type="button" @click="confirmApprove" class="btn btn-success">
+                    Yes, Approve Request
+                </button>
+                <button type="button" @click="closeApproveConfirmation" class="btn btn-secondary">
+                    No, Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
   </div>
 </template>
 
@@ -104,6 +124,8 @@ const user = ref({})
 const userData = JSON.parse(localStorage.getItem('user'))
 const pendingRequests = ref([])
 const isLoaded = ref(false)
+const showApproveConfirmation = ref(false);
+const requestToApprove = ref(null);
 
 const fetchPendingRequests = async () => {
   try {
@@ -183,25 +205,36 @@ const closeForm = () => {
   errorMessage.value = '';
   };
 
-const approveRequest = async (request) => {
-  try {
-    const response = await axios.patch(`${import.meta.env.VITE_API_URL}/api/update-request`, {
-      request_id: request.request_id,
-      request_status: 'APPROVED',
-      reason: ''
-    });
-    console.log('Approval response:', response.data);
-    // Refresh the pending requests list
-    await fetchPendingRequests();
-  } catch (error) {
-    console.error('Error approving request:', error);
-    // Display the error message from the server
-    if (error.response && error.response.data && error.response.data.message) {
-      alert(`Error approving request: ${error.response.data.message}`);
-    } else {
-      alert('Error approving request');
+  const approveRequest = (request) => {
+    requestToApprove.value = request;
+    showApproveConfirmation.value = true;
+};
+
+// Handle the actual approval
+const confirmApprove = async () => {
+    try {
+        const response = await axios.patch(`${import.meta.env.VITE_API_URL}/api/update-request`, {
+            request_id: requestToApprove.value.request_id,
+            request_status: 'APPROVED',
+            reason: ''
+        });
+        console.log('Approval response:', response.data);
+        showApproveConfirmation.value = false;
+        await fetchPendingRequests();
+    } catch (error) {
+        console.error('Error approving request:', error);
+        if (error.response && error.response.data && error.response.data.message) {
+            alert(`Error approving request: ${error.response.data.message}`);
+        } else {
+            alert('Error approving request');
+        }
     }
-  }
+};
+
+// Close the confirmation modal
+const closeApproveConfirmation = () => {
+    showApproveConfirmation.value = false;
+    requestToApprove.value = null;
 };
 
 
@@ -246,8 +279,9 @@ const rejectRequest = async () => {
 
 .header {
   color: #141b4d;
-  padding-top: 4rem;
-  padding-bottom: 2rem;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+
 }
 .card {
   border: none;
@@ -419,5 +453,31 @@ button:hover {
 
 .btn-secondary:hover {
   background-color: #5a6268;
+}
+
+.btn-success {
+    background-color: #28a745;
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+}
+
+.form-container.small {
+    width: 400px;
+}
+
+.form-actions .btn {
+    width: auto;
+    margin-bottom: 0;
+}
+
+.text-muted {
+    color: #6c757d;
+}
+
+.small {
+    font-size: 0.875rem;
 }
 </style>
