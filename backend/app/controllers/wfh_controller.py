@@ -3,6 +3,7 @@ from app.services.wfh_request_service import WFHRequestService
 from app.services.wfh_schedule_service import WFHScheduleService
 from app.services.wfh_check_service import WFHCheckService
 from app.models.wfh_request import WFHRequest
+from app.models.wfh_schedule import WFHSchedule
 from datetime import datetime, timedelta, date
 from app import db
 
@@ -368,4 +369,50 @@ def hr_schedule_detail(date):
         return jsonify(data), 200
     except Exception as e:
         print(f"Error in hr_schedule_detail: {str(e)}")
+        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+    
+
+@wfh_bp.route('/create-cancel-request', methods=['POST'])
+def create_cancel_request():
+
+    data = request.get_json()
+    schedule_id = data['schedule_id']
+    reason = data['reason']
+  
+    try:
+        schedule_obj = WFHSchedule.query.get(schedule_id)
+        if schedule_obj:
+            s_id = schedule_obj.staff_id
+            m_id = schedule_obj.manager_id
+            startdate = schedule_obj.date
+            dur = schedule_obj.duration
+            today = datetime.today().date()
+            two_weeks_before = today - timedelta(weeks=2)
+            two_weeks_after = today + timedelta(weeks=2)
+            if two_weeks_before <= startdate <= two_weeks_after:
+                
+                wfh_request = WFHRequestService.create_request(
+                staff_id=s_id,
+                manager_id=m_id,
+                request_date=today,
+                start_date=startdate,
+                end_date=None,
+                reason_for_applying=reason,
+                duration="CANCEL REQUEST"
+                )
+
+                if wfh_request:
+                    return jsonify({"message": f'SUCCESS'}), 200
+                 
+            else:
+                return jsonify({"message": f'Exceeded date range'}), 400
+                
+
+        else:
+            return jsonify({"message": f'Schedule does not exist'}), 400
+    
+    except Exception as e:
+        print(f"ERROR: An exception occurred while creating cancel request")
+        print(f"Exception details: {str(e)}")
+        print("===== CREATE CANCEL REQUEST FAILED =====\n")
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500

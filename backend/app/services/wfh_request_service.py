@@ -42,6 +42,9 @@ class WFHRequestService:
             WFHRequest.start_date == start_date,
             WFHRequest.status != 'EXPIRED'
         ).first()
+        print(duration)
+        if duration == "CANCEL REQUEST":
+            existing_request = False
 
         if existing_request and (not end_date) and existing_request.status in ['APPROVED', 'PENDING']:
             

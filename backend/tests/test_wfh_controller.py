@@ -6,6 +6,9 @@ from config import TestConfig
 from app.models.staff import Staff
 from app.models.wfh_request import WFHRequest
 from app.models.wfh_schedule import WFHSchedule
+from unittest.mock import patch
+from app.services.wfh_request_service import WFHRequestService
+
 
 
 class WFHControllerTestCase(unittest.TestCase):
@@ -447,6 +450,227 @@ class WFHControllerTestCase(unittest.TestCase):
         # Verify schedule status is updated
         updated_schedule = WFHSchedule.query.filter_by(request_id=wfh_request.request_id).first()
         self.assertEqual(updated_schedule.status, "CANCELLED")
+
+    def test_create_cancel_request_success(self):
+        # Happy Path
+        today = datetime.now().date()
+        wfh_schedule = WFHSchedule(
+            request_id=1,
+            staff_id=self.staff.staff_id,
+            manager_id=self.manager.staff_id,
+            date=today,
+            duration="FULL_DAY",
+            status="APPROVED",
+            dept=self.staff.dept,
+            position=self.staff.position
+        )
+        db.session.add(wfh_schedule)
+        db.session.commit()
+
+        response = self.client.post(
+        '/api/create-cancel-request',
+        json={  # Use json= instead of data=
+            'schedule_id': 1,
+            'reason': "I inputed wrongly"
+        }
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {"message": "SUCCESS"})
+        new_request = WFHRequest.query.filter_by(staff_id=self.staff.staff_id, reason_for_applying="I inputed wrongly").first()
+        self.assertEqual(new_request.duration, "CANCEL REQUEST") 
+
+    def test_create_cancel_request_non_existent_schedule(self):
+        # Schedule does not exist
+        response = self.client.post(
+        '/api/create-cancel-request',
+        json={  # Use json= instead of data=
+            'schedule_id': 1,
+            'reason': "I inputed wrongly"
+        }
+        )
+        
+    
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.get_json(), {"message": "Schedule does not exist"})
+        
+
+    def test_create_cancel_request_out_of_date_range(self):
+        # Schedule falls out of the required range of 2 weeks before and after
+        test_date = "2024-10-13"
+        start_date = datetime.strptime(test_date, "%Y-%m-%d").date()
+
+
+        wfh_schedule = WFHSchedule(
+            request_id=1,
+            staff_id=self.staff.staff_id,
+            manager_id=self.manager.staff_id,
+            date=start_date,
+            duration="FULL_DAY",
+            status="APPROVED",
+            dept=self.staff.dept,
+            position=self.staff.position
+        )
+        db.session.add(wfh_schedule)
+        db.session.commit()
+
+        response = self.client.post(
+        '/api/create-cancel-request',
+        json={  # Use json= instead of data=
+            'schedule_id': 1,
+            'reason': "I inputed wrongly"
+        }
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.get_json(), {"message": "Exceeded date range"})
+
+
+    def test_create_cancel_request_create_fail(self):
+        # Use patch as a context manager to mock the create_request method
+        with patch.object(WFHRequestService, 'create_request', side_effect=ValueError("End date must be after start date.")):
+            # Create a valid schedule in the database for the test
+            today = datetime.now().date()
+            wfh_schedule = WFHSchedule(
+                request_id=1,
+                staff_id=1,
+                manager_id=2,
+                date=today,
+                duration="FULL_DAY",
+                status="APPROVED",
+                dept="Test Department",
+                position="Test Position"
+            )
+            
+            db.session.add(wfh_schedule)
+            db.session.commit()
+
+            # Make a POST request to create-cancel-request
+            response = self.client.post(
+                '/api/create-cancel-request',
+                json={
+                    'schedule_id': 1,
+                    'reason': "I made an error"
+                }
+            )
+            
+            # Assert the response status code and message
+            self.assertEqual(response.status_code, 500)
+
+    def test_create_cancel_request_boundary1(self):
+        # a day before start accept
+        test_date = "2024-10-13"
+        start_date = datetime.strptime(test_date, "%Y-%m-%d").date()
+
+        wfh_schedule = WFHSchedule(
+            request_id=1,
+            staff_id=self.staff.staff_id,
+            manager_id=self.manager.staff_id,
+            date=start_date,
+            duration="FULL_DAY",
+            status="APPROVED",
+            dept=self.staff.dept,
+            position=self.staff.position
+        )
+        db.session.add(wfh_schedule)
+        db.session.commit()
+
+        response = self.client.post(
+        '/api/create-cancel-request',
+        json={  # Use json= instead of data=
+            'schedule_id': 1,
+            'reason': "I inputed wrongly"
+        }
+        )
+        
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.get_json(), {"message": "Exceeded date range"})
+        
+    def test_create_cancel_request_boundary2(self):
+        # the day start accept
+        test_date = "2024-10-14"
+        start_date = datetime.strptime(test_date, "%Y-%m-%d").date()
+        wfh_schedule = WFHSchedule(
+            request_id=1,
+            staff_id=self.staff.staff_id,
+            manager_id=self.manager.staff_id,
+            date=start_date,
+            duration="FULL_DAY",
+            status="APPROVED",
+            dept=self.staff.dept,
+            position=self.staff.position
+        )
+        db.session.add(wfh_schedule)
+        db.session.commit()
+
+        response = self.client.post(
+        '/api/create-cancel-request',
+        json={  # Use json= instead of data=
+            'schedule_id': 1,
+            'reason': "I inputed wrongly"
+        }
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {"message": "SUCCESS"})
+
+    def test_create_cancel_request_boundary3(self):
+        # the day last accept
+        test_date = "2024-11-11"
+        start_date = datetime.strptime(test_date, "%Y-%m-%d").date()
+        wfh_schedule = WFHSchedule(
+            request_id=1,
+            staff_id=self.staff.staff_id,
+            manager_id=self.manager.staff_id,
+            date=start_date,
+            duration="FULL_DAY",
+            status="APPROVED",
+            dept=self.staff.dept,
+            position=self.staff.position
+        )
+        db.session.add(wfh_schedule)
+        db.session.commit()
+
+        response = self.client.post(
+        '/api/create-cancel-request',
+        json={  # Use json= instead of data=
+            'schedule_id': 1,
+            'reason': "I inputed wrongly"
+        }
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {"message": "SUCCESS"})
+
+    def test_create_cancel_request_boundary4(self):
+        # the day after last accept
+        test_date = "2024-11-12"
+        start_date = datetime.strptime(test_date, "%Y-%m-%d").date()
+        wfh_schedule = WFHSchedule(
+            request_id=1,
+            staff_id=self.staff.staff_id,
+            manager_id=self.manager.staff_id,
+            date=start_date,
+            duration="FULL_DAY",
+            status="APPROVED",
+            dept=self.staff.dept,
+            position=self.staff.position
+        )
+        db.session.add(wfh_schedule)
+        db.session.commit()
+
+        response = self.client.post(
+        '/api/create-cancel-request',
+        json={  # Use json= instead of data=
+            'schedule_id': 1,
+            'reason': "I inputed wrongly"
+        }
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.get_json(), {"message": "Exceeded date range"})
+
+
 
 if __name__ == "__main__":
     unittest.main()
