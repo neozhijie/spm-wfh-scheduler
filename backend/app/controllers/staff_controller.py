@@ -30,3 +30,13 @@ def get_staff_by_id(staff_id):
     if not staff:
         abort(404, description="Staff not found")
     return jsonify(staff.to_dict()), 200
+
+@staff_bp.route('/departments', methods=['GET'])
+def get_all_depts():
+    try:
+        departments = StaffService.get_departments()
+        print("Success")
+        return jsonify(departments), 200
+    except Exception as e:
+        print(f"Error in get_all_depts: {str(e)}")
+        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
