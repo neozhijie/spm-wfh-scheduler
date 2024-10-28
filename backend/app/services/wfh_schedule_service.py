@@ -70,6 +70,8 @@ class WFHScheduleService:
                     schedule.status = "REJECTED"
                 elif status == "EXPIRED":
                     schedule.status = "EXPIRED"
+                elif status == "CANCELLED":
+                    schedule.status = "CANCELLED"
 
         # Commit the updated schedules to the database
         db.session.commit()

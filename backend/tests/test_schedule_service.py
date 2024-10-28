@@ -993,5 +993,59 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
         result = WFHScheduleService.get_hr_schedule_detail(date)
         self.assertEqual(result, {'date': date.isoformat(), 'staff': []})
 
+    def test_update_schedule_cancelled(self):
+        # Create a schedule
+        today = datetime.now().date()
+        start_date = today + timedelta(days=5)
+        existing_schedule = WFHSchedule(
+            request_id=1,
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            date=start_date,
+            duration="FULL_DAY",
+            dept=self.staff3.dept,
+            position=self.staff3.position,
+        )
+        db.session.add(existing_schedule)
+        db.session.commit()
+
+        # Cancel the schedule
+        updated_schedule = WFHScheduleService.update_schedule(
+            request_id=1, status="CANCELLED"
+        )
+
+        self.assertEqual(updated_schedule, True)
+        self.assertEqual(existing_schedule.status, "CANCELLED")
+
+    def test_update_schedule_recurring_cancelled(self):
+        today = datetime.now().date()
+        start_date = today + timedelta(days=5)
+        
+        # Create multiple schedules for recurring WFH
+        schedules = []
+        for i in range(3):
+            schedule = WFHSchedule(
+                request_id=1,
+                staff_id=self.staff3.staff_id,
+                manager_id=self.staff2.staff_id,
+                date=start_date + timedelta(days=7*i),
+                duration="FULL_DAY",
+                dept=self.staff3.dept,
+                position=self.staff3.position,
+            )
+            schedules.append(schedule)
+        
+        db.session.add_all(schedules)
+        db.session.commit()
+
+        # Cancel all schedules
+        updated_schedule = WFHScheduleService.update_schedule(
+            request_id=1, status="CANCELLED"
+        )
+
+        self.assertEqual(updated_schedule, True)
+        for schedule in schedules:
+            self.assertEqual(schedule.status, "CANCELLED")
+
 if __name__ == "__main__":
     unittest.main()

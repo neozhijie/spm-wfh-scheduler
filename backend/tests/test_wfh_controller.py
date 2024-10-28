@@ -398,5 +398,55 @@ class WFHControllerTestCase(unittest.TestCase):
         data = response.get_json()
         self.assertIn('An error occurred', data['message'])
 
+    def test_update_wfh_request_cancel(self):
+        # Create a pending request
+        wfh_request = WFHRequest(
+            staff_id=self.staff.staff_id,
+            manager_id=self.manager.staff_id,
+            request_date=self.today,
+            start_date=datetime.strptime(self.future_date, "%Y-%m-%d").date(),
+            reason_for_applying="Pending request",
+            duration="FULL_DAY",
+        )
+        db.session.add(wfh_request)
+        db.session.commit()
+
+        # Create associated schedule
+        wfh_schedule = WFHSchedule(
+            request_id=wfh_request.request_id,
+            staff_id=self.staff.staff_id,
+            manager_id=self.manager.staff_id,
+            date=wfh_request.start_date,
+            duration="FULL_DAY",
+            status="PENDING",
+            dept=self.staff.dept,
+            position=self.staff.position
+        )
+        db.session.add(wfh_schedule)
+        db.session.commit()
+
+        data = {
+            "request_id": wfh_request.request_id,
+            "request_status": "CANCELLED",
+            "reason": "",
+        }
+        response = self.client.patch(
+            "/api/update-request",
+            data=json.dumps(data),
+            content_type="application/json",
+        )
+        
+        # Check response
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Successfully updated request", response.get_data(as_text=True))
+
+        # Verify request status is updated
+        updated_request = WFHRequest.query.get(wfh_request.request_id)
+        self.assertEqual(updated_request.status, "CANCELLED")
+
+        # Verify schedule status is updated
+        updated_schedule = WFHSchedule.query.filter_by(request_id=wfh_request.request_id).first()
+        self.assertEqual(updated_schedule.status, "CANCELLED")
+
 if __name__ == "__main__":
     unittest.main()

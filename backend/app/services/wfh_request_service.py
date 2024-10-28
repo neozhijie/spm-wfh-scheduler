@@ -43,7 +43,7 @@ class WFHRequestService:
             WFHRequest.status != 'EXPIRED'
         ).first()
 
-        if existing_request and (not end_date) and existing_request.status != 'REJECTED':
+        if existing_request and (not end_date) and existing_request.status in ['APPROVED', 'PENDING']:
             
             raise ValueError("A request for this date already exists.")
 
@@ -71,7 +71,12 @@ class WFHRequestService:
         
         # Check if the request exists
         if request:
-            
+
+        # If status is CANCELLED, we don't need to check the date range
+            if new_request_status == 'CANCELLED':
+                request.status = new_request_status
+                db.session.commit()
+                return True
             # Check if within date range
             request_date = request.start_date
             if WFHRequestService.check_date(request_date , two_months_ago):
