@@ -32,11 +32,10 @@ def get_staff_by_id(staff_id):
     return jsonify(staff.to_dict()), 200
 
 @staff_bp.route('/departments', methods=['GET'])
-def get_all_depts():
+def get_departments():
     try:
-        departments = StaffService.get_departments()
-        print("Success")
-        return jsonify(departments), 200
+        data = StaffService.get_departments()  
+        return jsonify(data), 200
     except Exception as e:
-        print(f"Error in get_all_depts: {str(e)}")
+        print(f"Error in get_departments: {str(e)}")
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500

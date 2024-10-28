@@ -297,7 +297,7 @@
       const startDateStr = start.toISOString().split('T')[0];
       const endDateStr = end.toISOString().split('T')[0];
   
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/HR-schedule-summary`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/hr-schedule-summary`, {
         params: {
           start_date: startDateStr,
           end_date: endDateStr
@@ -731,7 +731,7 @@
   // Fetch HR schedule details for a specific date
   async function fetchHRScheduleDetail(dateStr) {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/HR-schedule-detail/${dateStr}`);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/hr-schedule-detail/${dateStr}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching HR schedule detail:', error);
@@ -1123,11 +1123,7 @@ function togglePosition(timeOfDay, managerId, positionName) {
   .fc-daygrid-event {
     white-space: normal !important;
   }
-  
-  .calendar-event {
-    /* Additional styling if needed */
-  }
-  
+
   .fc-daygrid-event-harness {
     margin-bottom: 2px !important;
   }

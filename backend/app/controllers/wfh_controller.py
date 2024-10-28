@@ -336,7 +336,7 @@ def get_staff_requests(staff_id):
         print(f"Error in get_staff_requests: {str(e)}")
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
         
-@wfh_bp.route('HR-schedule-summary', methods = ['GET'])
+@wfh_bp.route('hr-schedule-summary', methods = ['GET'])
 def hr_schedule_summary():
     try:
         # Get start_date and end_date from query params, else use default range

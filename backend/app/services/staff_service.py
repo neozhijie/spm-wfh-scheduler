@@ -90,6 +90,13 @@ class StaffService:
             print(str(e))
             raise
 
+    @staticmethod
     def get_departments():
+        # Query all unique departments from the staff records
         departments = Staff.query.with_entities(Staff.dept).distinct().all()
-        return [dept[0] for dept in departments] if departments else []
+        
+        # Prepare the department list
+        department_list = [{'dept': dept[0]} for dept in departments]  # dept[0] to access the actual department name
+
+        return {'departments': department_list}
+ 

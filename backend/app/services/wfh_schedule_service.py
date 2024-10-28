@@ -499,6 +499,9 @@ class WFHScheduleService:
         for staff in staff_list:
             staff_status[staff.staff_id] = {
                 'staff_id': staff.staff_id,
+                'manager_id': staff.reporting_manager,
+                'role': staff.role,
+                'dept': staff.dept,
                 'name': f"{staff.staff_fname} {staff.staff_lname}",
                 'position': staff.position,
                 'status_am': 'OFFICE',
