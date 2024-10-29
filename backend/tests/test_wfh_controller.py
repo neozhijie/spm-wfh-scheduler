@@ -559,7 +559,7 @@ class WFHControllerTestCase(unittest.TestCase):
 
     def test_create_cancel_request_boundary1(self):
         # a day before start accept
-        test_date = "2024-10-13"
+        test_date = "2024-10-14"
         start_date = datetime.strptime(test_date, "%Y-%m-%d").date()
 
         wfh_schedule = WFHSchedule(
@@ -588,7 +588,7 @@ class WFHControllerTestCase(unittest.TestCase):
         
     def test_create_cancel_request_boundary2(self):
         # the day start accept
-        test_date = "2024-10-14"
+        test_date = "2024-10-15"
         start_date = datetime.strptime(test_date, "%Y-%m-%d").date()
         wfh_schedule = WFHSchedule(
             request_id=1,
@@ -616,7 +616,7 @@ class WFHControllerTestCase(unittest.TestCase):
 
     def test_create_cancel_request_boundary3(self):
         # the day last accept
-        test_date = "2024-11-11"
+        test_date = "2024-11-12"
         start_date = datetime.strptime(test_date, "%Y-%m-%d").date()
         wfh_schedule = WFHSchedule(
             request_id=1,
@@ -644,7 +644,7 @@ class WFHControllerTestCase(unittest.TestCase):
 
     def test_create_cancel_request_boundary4(self):
         # the day after last accept
-        test_date = "2024-11-12"
+        test_date = "2024-11-13"
         start_date = datetime.strptime(test_date, "%Y-%m-%d").date()
         wfh_schedule = WFHSchedule(
             request_id=1,
