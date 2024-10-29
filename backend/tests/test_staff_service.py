@@ -207,17 +207,17 @@ class StaffServiceTestCase(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             StaffService.get_all_subordinates(99)
         self.assertEqual(str(context.exception), "No staff found with id: 99")
+    
+    def test_get_depts_none(self):
+        db.session.query(Staff).delete()
+        db.session.commit()
+        result = StaffService.get_departments()
+        self.assertEqual(len(result['departments']), 0)
 
-    # def test_get_depts_none(self):
-    #     db.session.query(Staff).delete()
-    #     db.session.commit()
-    #     result = StaffService.get_departments()
-    #     self.assertEqual(len(result), 0)
-
-    # def test_get_depts(self):
-    #     result = StaffService.get_departments()
-    #     self.assertEqual(len(result), 1)
-    #     self.assertEqual(result, ["Test Department"])
+    def test_get_depts(self):
+        result = StaffService.get_departments()
+        # self.assertEqual(len(result), 1)
+        self.assertEqual(result, {'departments': [{'dept': 'Test Department'}]})
 
 
 
