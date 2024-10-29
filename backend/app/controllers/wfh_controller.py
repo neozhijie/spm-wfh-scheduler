@@ -372,7 +372,7 @@ def hr_schedule_detail(date):
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
     
 
-@wfh_bp.route('/create-cancel-request', methods=['POST'])
+@wfh_bp.route('/create-withdraw-request', methods=['POST'])
 def create_cancel_request():
 
     data = request.get_json()

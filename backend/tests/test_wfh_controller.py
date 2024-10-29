@@ -468,7 +468,7 @@ class WFHControllerTestCase(unittest.TestCase):
         db.session.commit()
 
         response = self.client.post(
-        '/api/create-cancel-request',
+        '/api/create-withdraw-request',
         json={  # Use json= instead of data=
             'schedule_id': 1,
             'reason': "I inputed wrongly"
@@ -483,7 +483,7 @@ class WFHControllerTestCase(unittest.TestCase):
     def test_create_cancel_request_non_existent_schedule(self):
         # Schedule does not exist
         response = self.client.post(
-        '/api/create-cancel-request',
+        '/api/create-withdraw-request',
         json={  # Use json= instead of data=
             'schedule_id': 1,
             'reason': "I inputed wrongly"
@@ -515,7 +515,7 @@ class WFHControllerTestCase(unittest.TestCase):
         db.session.commit()
 
         response = self.client.post(
-        '/api/create-cancel-request',
+        '/api/create-withdraw-request',
         json={  # Use json= instead of data=
             'schedule_id': 1,
             'reason': "I inputed wrongly"
@@ -545,9 +545,9 @@ class WFHControllerTestCase(unittest.TestCase):
             db.session.add(wfh_schedule)
             db.session.commit()
 
-            # Make a POST request to create-cancel-request
+            # Make a POST request to create-withdraw-request
             response = self.client.post(
-                '/api/create-cancel-request',
+                '/api/create-withdraw-request',
                 json={
                     'schedule_id': 1,
                     'reason': "I made an error"
@@ -575,7 +575,7 @@ class WFHControllerTestCase(unittest.TestCase):
         db.session.commit()
 
         response = self.client.post(
-        '/api/create-cancel-request',
+        '/api/create-withdraw-request',
         json={  # Use json= instead of data=
             'schedule_id': 1,
             'reason': "I inputed wrongly"
@@ -602,7 +602,7 @@ class WFHControllerTestCase(unittest.TestCase):
         db.session.commit()
 
         response = self.client.post(
-        '/api/create-cancel-request',
+        '/api/create-withdraw-request',
         json={  # Use json= instead of data=
             'schedule_id': 1,
             'reason': "I inputed wrongly"
@@ -629,7 +629,7 @@ class WFHControllerTestCase(unittest.TestCase):
         db.session.commit()
 
         response = self.client.post(
-        '/api/create-cancel-request',
+        '/api/create-withdraw-request',
         json={  # Use json= instead of data=
             'schedule_id': 1,
             'reason': "I inputed wrongly"
@@ -656,7 +656,7 @@ class WFHControllerTestCase(unittest.TestCase):
         db.session.commit()
 
         response = self.client.post(
-        '/api/create-cancel-request',
+        '/api/create-withdraw-request',
         json={  # Use json= instead of data=
             'schedule_id': 1,
             'reason': "I inputed wrongly"
