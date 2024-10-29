@@ -655,7 +655,7 @@
               // groupedData[period].managers[staff.staff_id].total += 1;
             }
 
-            if (staff.role !== 3){
+            if (staff.role === 2){
             if (staff.manager_id in groupedData[period].managers) {
               if (staff[`status_${period.toLowerCase()}`] === 'OFFICE') {
                 groupedData[period].managers[staff.manager_id].inOffice += 1;
@@ -676,6 +676,7 @@
               });
             }}else{
             if (staff.staff_id in groupedData[period].managers) {
+              console.log(groupedData[period].managers)
               if (staff[`status_${period.toLowerCase()}`] === 'OFFICE') {
                 groupedData[period].managers[staff.staff_id].inOffice += 1;
                 groupedData[period].inOffice += 1;
