@@ -97,6 +97,11 @@ jobs:
           cd frontend
           npm run build
 
+      - name: Run Tests
+        run: |
+          cd frontend
+          npm run test
+
       - name: Notify on failure
         if: failure()
         env:
