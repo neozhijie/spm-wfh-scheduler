@@ -135,8 +135,9 @@ def update_wfh_request():
         request_obj = WFHRequest.query.get(request_id)
         if not request_obj:
             return jsonify({"message": "Request does not exist"}), 404
+        
 
-        if new_request_status == 'APPROVED':
+        if new_request_status == 'APPROVED' and request_obj.duration != "WITHDRAWAL REQUEST":
             staff_id = request_obj.staff_id
             start_date = request_obj.start_date
             end_date = request_obj.end_date
@@ -169,6 +170,8 @@ def update_wfh_request():
         response = WFHRequestService.update_request(
             request_id, new_request_status, two_months_ago, reason)
         if response == True:
+            if new_request_status == 'APPROVED' and request_obj.duration == "WITHDRAWAL REQUEST":
+                new_request_status = "WITHDRAWN"
             response2 = WFHScheduleService.update_schedule(request_id, new_request_status)
 
             if response2 == True:
@@ -398,11 +401,14 @@ def create_cancel_request():
                 start_date=startdate,
                 end_date=None,
                 reason_for_applying=reason,
-                duration="CANCEL REQUEST"
+                duration="WITHDRAWAL REQUEST"
                 )
 
                 if wfh_request:
-                    return jsonify({"message": f'SUCCESS'}), 200
+                    request_id = wfh_request.request_id
+                    updated_request_id = WFHScheduleService.change_schedule_request_id(schedule_id,request_id)
+                    if updated_request_id == request_id:
+                        return jsonify({"message": f'SUCCESS'}), 200
                  
             else:
                 return jsonify({"message": f'Exceeded date range'}), 400
@@ -412,6 +418,7 @@ def create_cancel_request():
             return jsonify({"message": f'Schedule does not exist'}), 400
     
     except Exception as e:
+        db.session.rollback()  # Rollback the session in case of an error
         print(f"ERROR: An exception occurred while creating cancel request")
         print(f"Exception details: {str(e)}")
         print("===== CREATE CANCEL REQUEST FAILED =====\n")

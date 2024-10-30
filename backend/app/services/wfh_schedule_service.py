@@ -72,6 +72,8 @@ class WFHScheduleService:
                     schedule.status = "EXPIRED"
                 elif status == "CANCELLED":
                     schedule.status = "CANCELLED"
+            elif status == "WITHDRAWN":
+                schedule.status = "WITHDRAWN"
 
         # Commit the updated schedules to the database
         db.session.commit()
@@ -530,3 +532,19 @@ class WFHScheduleService:
             'date': date.isoformat(),
             'staff': staff_list_status
         }
+
+    @staticmethod
+    def change_schedule_request_id(schedule_id, request_id):
+        try:
+            schedule = WFHSchedule.query.filter(
+                WFHSchedule.schedule_id == schedule_id
+            ).first()
+            if schedule:
+                schedule.request_id = request_id
+                db.session.commit()
+                return schedule.request_id
+            
+        except Exception as e:
+            print(f"Error in updating schedule request id")
+            
+            

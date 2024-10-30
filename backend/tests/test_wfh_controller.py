@@ -8,6 +8,7 @@ from app.models.wfh_request import WFHRequest
 from app.models.wfh_schedule import WFHSchedule
 from unittest.mock import patch
 from app.services.wfh_request_service import WFHRequestService
+from app.services.wfh_schedule_service import WFHScheduleService
 
 
 
@@ -451,7 +452,7 @@ class WFHControllerTestCase(unittest.TestCase):
         updated_schedule = WFHSchedule.query.filter_by(request_id=wfh_request.request_id).first()
         self.assertEqual(updated_schedule.status, "CANCELLED")
 
-    def test_create_cancel_request_success(self):
+    def test_create_withdraw_request_success(self):
         # Happy Path
         today = datetime.now().date()
         wfh_schedule = WFHSchedule(
@@ -478,9 +479,9 @@ class WFHControllerTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(), {"message": "SUCCESS"})
         new_request = WFHRequest.query.filter_by(staff_id=self.staff.staff_id, reason_for_applying="I inputed wrongly").first()
-        self.assertEqual(new_request.duration, "CANCEL REQUEST") 
+        self.assertEqual(new_request.duration, "WITHDRAWAL REQUEST") 
 
-    def test_create_cancel_request_non_existent_schedule(self):
+    def test_create_withdraw_request_non_existent_schedule(self):
         # Schedule does not exist
         response = self.client.post(
         '/api/create-withdraw-request',
@@ -495,7 +496,7 @@ class WFHControllerTestCase(unittest.TestCase):
         self.assertEqual(response.get_json(), {"message": "Schedule does not exist"})
         
 
-    def test_create_cancel_request_out_of_date_range(self):
+    def test_create_withdraw_request_out_of_date_range(self):
         # Schedule falls out of the required range of 2 weeks before and after
         test_date = "2024-10-13"
         start_date = datetime.strptime(test_date, "%Y-%m-%d").date()
@@ -526,9 +527,9 @@ class WFHControllerTestCase(unittest.TestCase):
         self.assertEqual(response.get_json(), {"message": "Exceeded date range"})
 
 
-    def test_create_cancel_request_create_fail(self):
+    def test_create_withdraw_request_create_fail(self):
         # Use patch as a context manager to mock the create_request method
-        with patch.object(WFHRequestService, 'create_request', side_effect=ValueError("End date must be after start date.")):
+        with patch.object(WFHRequestService, 'create_request', side_effect=ValueError()):
             # Create a valid schedule in the database for the test
             today = datetime.now().date()
             wfh_schedule = WFHSchedule(
@@ -557,7 +558,7 @@ class WFHControllerTestCase(unittest.TestCase):
             # Assert the response status code and message
             self.assertEqual(response.status_code, 500)
 
-    def test_create_cancel_request_boundary1(self):
+    def test_create_withdraw_request_boundary1(self):
         # a day before start accept
         start_date = datetime.today().date() - timedelta(days=15)
 
@@ -585,7 +586,7 @@ class WFHControllerTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.get_json(), {"message": "Exceeded date range"})
         
-    def test_create_cancel_request_boundary2(self):
+    def test_create_withdraw_request_boundary2(self):
         # the day start accept
         start_date = datetime.today().date() - timedelta(days=14)
         wfh_schedule = WFHSchedule(
@@ -612,7 +613,7 @@ class WFHControllerTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(), {"message": "SUCCESS"})
 
-    def test_create_cancel_request_boundary3(self):
+    def test_create_withdraw_request_boundary3(self):
         # the day last accept
         start_date = datetime.today().date() + timedelta(days=14)
         wfh_schedule = WFHSchedule(
@@ -639,7 +640,7 @@ class WFHControllerTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(), {"message": "SUCCESS"})
 
-    def test_create_cancel_request_boundary4(self):
+    def test_create_withdraw_request_boundary4(self):
         # the day after last accept
         start_date = datetime.today().date() + timedelta(days=15)
         wfh_schedule = WFHSchedule(
@@ -665,6 +666,188 @@ class WFHControllerTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.get_json(), {"message": "Exceeded date range"})
+
+    def test_update_wthdraw_request_success_approved(self):
+        # happy path -> APPROVE WITHDRAWAL
+        start_date = datetime.today().date() + timedelta(days=2)
+
+        wfh_schedule = WFHSchedule(
+            request_id=1,
+            staff_id=self.staff.staff_id,
+            manager_id=self.manager.staff_id,
+            date=start_date,
+            duration="FULL_DAY",
+            status="APPROVED",
+            dept=self.staff.dept,
+            position=self.staff.position
+        )
+
+        wfh_request = WFHRequest(
+            staff_id=self.staff.staff_id,
+            manager_id=self.manager.staff_id,
+            request_date=self.today,
+            start_date=start_date,
+            reason_for_applying="Applied wrongly",
+            duration="WITHDRAWAL REQUEST",
+        )
+
+        db.session.add(wfh_schedule)
+        db.session.add(wfh_request)
+        db.session.commit()
+
+        response = self.client.patch(
+        '/api/update-request',
+        json={  # Use json= instead of data=
+            'request_id': 1,
+            'request_status': "APPROVED",
+            'reason' : ''
+        }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(wfh_schedule.status, "WITHDRAWN")
+        self.assertEqual(response.get_json(), "Successfully updated request 1 as WITHDRAWN")
+
+    def test_update_wthdraw_request_success_reject(self):
+        # happy path -> REJECT WITHDRAWAL
+        start_date = datetime.today().date() + timedelta(days=2)
+
+        wfh_schedule = WFHSchedule(
+            request_id=1,
+            staff_id=self.staff.staff_id,
+            manager_id=self.manager.staff_id,
+            date=start_date,
+            duration="FULL_DAY",
+            status="APPROVED",
+            dept=self.staff.dept,
+            position=self.staff.position
+        )
+
+        wfh_request = WFHRequest(
+            staff_id=self.staff.staff_id,
+            manager_id=self.manager.staff_id,
+            request_date=self.today,
+            start_date=start_date,
+            reason_for_applying="Applied wrongly",
+            duration="WITHDRAWAL REQUEST",
+        )
+
+        db.session.add(wfh_schedule)
+        db.session.add(wfh_request)
+        db.session.commit()
+
+        response = self.client.patch(
+        '/api/update-request',
+        json={  # Use json= instead of data=
+            'request_id': 1,
+            'request_status': "REJECTED",
+            'reason' : ''
+        }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(wfh_schedule.status, "APPROVED")
+        self.assertEqual(response.get_json(), "Successfully updated request 1 as REJECTED")
+
+    def test_update_wthdraw_request_fail_non_existent_request(self):
+        # NEGATIVE TEST CASE - NO WITHDRAWAL REQUEST TO WITHDRAW
+        response = self.client.patch(
+        '/api/update-request',
+        json={  # Use json= instead of data=
+            'request_id': 1,
+            'request_status': "REJECTED",
+            'reason' : ''
+        }
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.get_json(), {"message": "Request does not exist"})
+
+    def test_update_wthdraw_request_fail_update_request_failed(self):
+        # NEGATIVE TEST CASE - UPDATE REQUEST FAILED
+        start_date = datetime.today().date() + timedelta(days=2)
+
+        wfh_schedule = WFHSchedule(
+            request_id=1,
+            staff_id=self.staff.staff_id,
+            manager_id=self.manager.staff_id,
+            date=start_date,
+            duration="FULL_DAY",
+            status="APPROVED",
+            dept=self.staff.dept,
+            position=self.staff.position
+        )
+
+        wfh_request = WFHRequest(
+            staff_id=self.staff.staff_id,
+            manager_id=self.manager.staff_id,
+            request_date=self.today,
+            start_date=start_date,
+            reason_for_applying="Applied wrongly",
+            duration="WITHDRAWAL REQUEST",
+        )
+
+        db.session.add(wfh_schedule)
+        db.session.add(wfh_request)
+        db.session.commit()
+
+        with patch.object(WFHRequestService, 'update_request', return_value = "False"):
+
+            response = self.client.patch(
+            '/api/update-request',
+            json={  # Use json= instead of data=
+                'request_id': 1,
+                'request_status': "REJECTED",
+                'reason' : ''
+            }
+            )
+
+            self.assertEqual(response.status_code, 404)
+
+    def test_update_wthdraw_request_fail_update_schedule_failed(self):
+        # NEGATIVE TEST CASE - UPDATE SCHEDULE FAILED
+        start_date = datetime.today().date() + timedelta(days=2)
+
+        wfh_schedule = WFHSchedule(
+            request_id=1,
+            staff_id=self.staff.staff_id,
+            manager_id=self.manager.staff_id,
+            date=start_date,
+            duration="FULL_DAY",
+            status="APPROVED",
+            dept=self.staff.dept,
+            position=self.staff.position
+        )
+
+        wfh_request = WFHRequest(
+            staff_id=self.staff.staff_id,
+            manager_id=self.manager.staff_id,
+            request_date=self.today,
+            start_date=start_date,
+            reason_for_applying="Applied wrongly",
+            duration="WITHDRAWAL REQUEST",
+        )
+
+        db.session.add(wfh_schedule)
+        db.session.add(wfh_request)
+        db.session.commit()
+
+        with patch.object(WFHScheduleService, 'update_schedule', return_value = "False"):
+
+            response = self.client.patch(
+            '/api/update-request',
+            json={  # Use json= instead of data=
+                'request_id': 1,
+                'request_status': "REJECTED",
+                'reason' : ''
+            }
+            )
+
+            self.assertEqual(response.status_code, 404)
+
+
+    
+        
+        
 
 
 
