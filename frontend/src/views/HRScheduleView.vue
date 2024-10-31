@@ -52,7 +52,7 @@
                     @click="toggleManager('AM', managerId)"
                   >
                     <div class="manager-header">
-                      <h3>{{ manager.managerName  + "'s team"}}</h3>
+                      <h3>{{ manager.managerName }}</h3>
                       <div class="badge-container">
                         <span class="badge badge-office">
                           In Office: {{ manager.inOffice }}/{{ manager.total }}
