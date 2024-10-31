@@ -818,10 +818,6 @@ function toggleTeam(timeOfDay, teamName) {
   white-space: normal !important;
 }
 
-.calendar-event {
-  /* Additional styling if needed */
-}
-
 .fc-daygrid-event-harness {
   margin-bottom: 2px !important;
 }
@@ -910,6 +906,27 @@ function toggleTeam(timeOfDay, teamName) {
   .tabs {
     flex-direction: row;
     justify-content: space-between;
+  }
+}
+@media screen and (max-width: 768px) {
+  :deep(.fc-header-toolbar) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  :deep(.fc-toolbar-title) {
+    font-size: 1em !important;
+    margin: 0.5rem 0 !important;
+  }
+
+  :deep(.fc-button) {
+    padding: 0.2rem 0.5rem !important;
+    font-size: 0.9em !important;
+  }
+
+  .calendar-container {
+    padding: 0.5rem;
   }
 }
 

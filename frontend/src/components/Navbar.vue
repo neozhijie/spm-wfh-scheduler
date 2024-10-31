@@ -40,8 +40,20 @@
               {{ user.fname }}
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuLink">
-              <li><a class="dropdown-item" href="#">{{ user.staff_fname }}</a></li>
-              <li><a class="dropdown-item" href="#" @click="logout">Logout</a></li>
+              <li class="user-info">
+                <div class="user-avatar">{{ user.staff_fname?.[0]?.toUpperCase() }}</div>
+                <div class="user-details">
+                  <span class="user-name">{{ user.staff_fname }}</span>
+                  <span class="user-role">{{ user.position }}</span>
+                </div>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <a class="dropdown-item" href="#" @click="logout">
+                  <font-awesome-icon icon="sign-out-alt" />
+                  Logout
+                </a>
+              </li>
             </ul>
           </li>
         </ul>
@@ -157,6 +169,67 @@ const logout = () => {
 .dropdown-menu {
   background-color: #141b4d;
   border-right: 0;
+  padding: 0.5rem 0;
+  min-width: 240px;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  background-color: #C69200;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: white;
+  margin-right: 1rem;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-weight: bold;
+  color: white;
+  margin-bottom: 0.25rem;
+}
+
+.user-role {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.dropdown-divider {
+  border-color: rgba(255, 255, 255, 0.1);
+  margin: 0;
+}
+
+.dropdown-item {
+  color: white;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dropdown-item:hover {
+  background-color: #1e2a6d;
+  color: #C69200;
+}
+
+.dropdown-item i {
+  width: 16px;
 }
 
 .dropdown-item {

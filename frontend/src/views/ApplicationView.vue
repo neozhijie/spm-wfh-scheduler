@@ -366,13 +366,23 @@ export default {
   transform: translateY(-2px);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 992px) {
   .card-header h2 {
     font-size: 1.5rem;
   }
 
   .card-body {
     padding: 1.5rem;
+  }
+  .form-check-inline {
+    display: block;
+    margin-right: 0;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-check-label {
+    display: inline-block;
+    margin-left: 0.5rem;
   }
 }
 </style>

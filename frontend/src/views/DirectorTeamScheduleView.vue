@@ -408,6 +408,7 @@
           container.style.justifyContent = 'center';
           container.style.alignItems = 'flex-start'; // Align badges beside text
           container.style.backgroundColor = arg.event.backgroundColor;
+          container.style.overflow = 'hidden';
   
           // Assign a class based on background color
           if (arg.event.backgroundColor === '#FFD93D') { // Yellow
@@ -437,18 +438,23 @@
           badgesWrapper.style.display = 'flex';
           badgesWrapper.style.gap = '4px';
   
-          // Create Office Badge
-          const officeBadge = document.createElement('span');
-          officeBadge.classList.add('badge', 'badge-office-calendar');
-          officeBadge.textContent = `Office: ${officeCount}`;
-  
-          // Create WFH Badge
+        // Create Office Badge
+        const officeBadge = document.createElement('span');
+        officeBadge.classList.add('badge', 'badge-office-calendar');
+        officeBadge.textContent = `In Office: ${officeCount}`;
+
+        badgesWrapper.appendChild(officeBadge);
+
+        // Conditionally add WFH badge if not small screen
+        if (!smallScreen) {
           const wfhBadge = document.createElement('span');
           wfhBadge.classList.add('badge', 'badge-wfh-calendar');
-          wfhBadge.textContent = `WFH: ${wfhCount}`;
-  
-          badgesWrapper.appendChild(officeBadge);
+          wfhBadge.textContent = `WFH: ${totalStaff - officeCount}`;
           badgesWrapper.appendChild(wfhBadge);
+        }
+  
+          // badgesWrapper.appendChild(officeBadge);
+          // badgesWrapper.appendChild(wfhBadge);
   
           labelContainer.appendChild(label);
           labelContainer.appendChild(badgesWrapper);
@@ -1010,6 +1016,7 @@
   background-color: transparent;
 }
 
+
 /* Media query for responsive layout */
 @media (max-width: 768px) {
   .calendar-container {
@@ -1073,6 +1080,27 @@
   }
 }
 
+@media screen and (max-width: 768px) {
+  :deep(.fc-header-toolbar) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  :deep(.fc-toolbar-title) {
+    font-size: 1em !important;
+    margin: 0.5rem 0 !important;
+  }
+
+  :deep(.fc-button) {
+    padding: 0.2rem 0.5rem !important;
+    font-size: 0.9em !important;
+  }
+
+  .calendar-container {
+    padding: 0.5rem;
+  }
+}
 /* New Styles for Conditional Text Colors */
 .yellow-event {
   color: #000000 !important;

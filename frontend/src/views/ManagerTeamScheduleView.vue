@@ -943,6 +943,28 @@ function toggleTeam(timeOfDay, teamName) {
   }
 }
 
+@media screen and (max-width: 768px) {
+  :deep(.fc-header-toolbar) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  :deep(.fc-toolbar-title) {
+    font-size: 1em !important;
+    margin: 0.5rem 0 !important;
+  }
+
+  :deep(.fc-button) {
+    padding: 0.2rem 0.5rem !important;
+    font-size: 0.9em !important;
+  }
+
+  .calendar-container {
+    padding: 0.5rem;
+  }
+}
+
 /* New Styles for Conditional Text Colors */
 .yellow-event {
   color: #000000 !important;

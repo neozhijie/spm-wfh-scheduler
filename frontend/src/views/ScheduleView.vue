@@ -256,45 +256,55 @@ async function initiateChunkedSummaryLoading() {
 .dashboard-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-}
-
-.top-section {
-  padding: 2rem;
-  text-align: left;
+  min-height: 100vh;
+  width: 100%;
+  padding: 1rem;
+  box-sizing: border-box;
 }
 
 .main-section {
   display: flex;
   justify-content: center;
-  height: 100%;
-  position: relative; /* Add this to position the overlay correctly */
+  flex: 1;
+  width: 100%;
+  position: relative;
 }
 
 .calendar-container {
-  width: 85%; 
+  width: 100%;
+  max-width: 1200px; /* Add maximum width */
+  margin: 0 auto;
   padding: 1rem;
-  position: relative; /* Add this to ensure the overlay is positioned relative to this container */
+  position: relative;
 }
 
-.fc {
+/* Calendar specific styles */
+:deep(.fc) {
   width: 100%;
   height: 100%;
+  min-height: 600px;
 }
 
-.fc-daygrid-event {
-  width: 100% !important;
-  height: auto;
-  white-space: normal; /* Prevent text overflow */
+:deep(.fc-toolbar-title) {
+  font-size: 1.2em !important;
 }
 
-.fc-daygrid-event > div {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 90%;  /* Ensure container spans the full width */
+:deep(.fc-daygrid-event) {
+  white-space: normal !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block !important;
+  margin: 1px 2px !important;
 }
 
+:deep(.fc-event-title) {
+  padding: 0 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.85em;
+}
+
+/* Loading overlay styles */
 .loading-overlay {
   position: absolute;
   top: 0;
@@ -306,16 +316,38 @@ async function initiateChunkedSummaryLoading() {
   justify-content: center;
   align-items: center;
   z-index: 10;
-  pointer-events: none; /* Allow interactions with elements underneath */
 }
 
 .spinner {
-  border: 8px solid #f3f3f3; /* Light grey */
-  border-top: 8px solid #3498db; /* Blue */
+  border: 8px solid #f3f3f3;
+  border-top: 8px solid #3498db;
   border-radius: 50%;
   width: 60px;
   height: 60px;
   animation: spin 2s linear infinite;
+}
+
+/* Media Queries */
+@media screen and (max-width: 768px) {
+  :deep(.fc-header-toolbar) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  :deep(.fc-toolbar-title) {
+    font-size: 1em !important;
+    margin: 0.5rem 0 !important;
+  }
+
+  :deep(.fc-button) {
+    padding: 0.2rem 0.5rem !important;
+    font-size: 0.9em !important;
+  }
+
+  .calendar-container {
+    padding: 0.5rem;
+  }
 }
 
 @keyframes spin {
@@ -323,4 +355,5 @@ async function initiateChunkedSummaryLoading() {
   100% { transform: rotate(360deg); }
 }
 </style>
+
 

@@ -8,7 +8,7 @@
                     <div class="header">
                         <h2 class="h4 mb-0 fw-bold">My WFH Requests</h2>
                     </div>
-                    <div class="filter-buttons d-flex justify-content-start align-items-center my-4 px-3">
+                    <div class="filter-buttons d-flex justify-content-center align-items-center my-4 px-3">
     <div class="toggle-container">
         <div v-for="status in statuses" 
              :key="status" 
@@ -553,13 +553,10 @@ button:hover {
 .filter-buttons {
     width: 100%;
     overflow-x: auto;
-    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-    scrollbar-width: none; /* Hide scrollbar for Firefox */
-    -ms-overflow-style: none; /* Hide scrollbar for IE/Edge */
-}
-
-.filter-buttons::-webkit-scrollbar {
-    display: none; /* Hide scrollbar for Chrome/Safari */
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    display: flex;
 }
 
 .toggle-container {
@@ -570,6 +567,9 @@ button:hover {
     gap: 0.3rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     min-width: fit-content; /* Ensures buttons don't shrink too much */
+    flex-wrap: nowrap; /* Prevent wrapping */
+    max-width: 100%; /* Ensure container doesn't overflow */
+    margin: 0 auto; /* Center the container */
 }
 
 .toggle-button {
@@ -581,14 +581,21 @@ button:hover {
     transition: all 0.3s ease;
     color: #666;
     user-select: none;
-    white-space: nowrap; /* Prevents text wrapping */
-    min-width: max-content; /* Ensures text doesn't get cut off */
+    white-space: nowrap;
+    flex: 1; /* Allow buttons to grow equally */
+    min-width: auto; /* Remove fixed min-width */
+    text-align: center; /* Center text */
 }
 
-/* Media queries for different screen sizes */
+/* Update media queries for better responsive behavior */
 @media screen and (max-width: 768px) {
+    .toggle-container {
+        padding: 0.25rem;
+        gap: 0.25rem;
+    }
+    
     .toggle-button {
-        padding: 0.4rem 1rem;
+        padding: 0.4rem 0.8rem;
         font-size: 0.85rem;
     }
 }
@@ -599,17 +606,24 @@ button:hover {
     }
     
     .toggle-container {
-        padding: 0.6rem;
-        gap: 0.4rem;
+        padding: 0.2rem;
+        gap: 0.2rem;
+        width: 100%; /* Take full width on very small screens */
     }
     
     .toggle-button {
-        padding: 0.35rem 0.8rem;
-        font-size: 0.8rem;
+        padding: 0.35rem 0.6rem;
+        font-size: 0.75rem;
     }
 }
 
-/* Rest of your existing toggle-button styles remain the same */
+/* Add a new breakpoint for very small screens */
+@media screen and (max-width: 360px) {
+    .toggle-button {
+        padding: 0.25rem 0.4rem;
+        font-size: 0.7rem;
+    }
+}
 .toggle-button:hover {
     background-color: rgba(255, 255, 255, 0.8);
     color: #333;
