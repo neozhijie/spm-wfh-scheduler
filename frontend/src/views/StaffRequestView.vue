@@ -8,16 +8,19 @@
                     <div class="header">
                         <h2 class="h4 mb-0 fw-bold">My WFH Requests</h2>
                     </div>
-                    <div class="filter-buttons d-flex justify-content-center align-items-center my-4 px-3">
-    <div class="toggle-container">
-        <div v-for="status in statuses" 
-             :key="status" 
-             @click="filterStatus = status" 
-             :class="['toggle-button', {'active': filterStatus === status}]">
-            {{ status }}
-        </div>
-    </div>
-</div>
+                    <div class="filter-buttons d-flex justify-content-start align-items-center my-4 px-3">
+                        <div class="toggle-container">
+                            <div v-for="status in statuses" 
+                                :key="status" 
+                                @click="filterStatus = status" 
+                                :class="['toggle-button', {'active': filterStatus === status}]">
+                                    {{ status }}
+                            </div>
+                        </div>
+                    </div>
+                    <div v-if="isLoading" class="loading-overlay">
+                        <div class="spinner"></div>
+                    </div>
                     <div v-if="isLoaded" class="card-body shadow">
                         <div v-if="filteredRequests.length > 0" class="table">
                             <table class="table table-hover">
@@ -33,7 +36,9 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="request in filteredRequests" :key="request.request_id">
+                                    <template v-for="request in filteredRequests" :key="request.request_id">
+                                    <!-- Main Request Row -->
+                                    <tr @click="toggleExpandRequest(request)">
                                         <td>{{ formatDate(request.request_date) }}</td>
                                         <td>{{ formatDate(request.start_date) }}</td>
                                         <td>{{ request.end_date ? formatDate(request.end_date) : '-' }}</td>
@@ -49,70 +54,118 @@
                                             <span :class="getRequestStatus(request.status)">{{ request.status }}</span>
                                         </td>
                                         <td>
-                                            <button v-if="request.status === 'PENDING'" class="btn btn-danger btn-sm"
-                                                @click="cancelRequest(request.request_id)">
+                                            <button v-if="request.status === 'PENDING' && request.duration!=='CANCEL REQUEST'" class="btn btn-danger btn-sm"
+                                                @click.stop="cancelRequest(request.request_id)">
                                                 Cancel
                                             </button>
                                             <button
-                                                v-if="request.status === 'APPROVED'"
+                                                v-if="request.status === 'APPROVED' && !request.is_recurring"
                                                 :class="{
-                                                    'btn btn-warning btn-sm': isWithinWithdrawalPeriod(request.start_date),
-                                                    'btn btn-secondary btn-sm': !isWithinWithdrawalPeriod(request.start_date)
+                                                    'btn btn-warning btn-sm': isWithinWithdrawalPeriod(request.start_date) && request.withdrawn === false,
+                                                    'btn btn-secondary btn-sm': !isWithinWithdrawalPeriod(request.start_date) || request.withdrawn === true
                                                 }"
-                                                @click="openRejectForm(request)"
-              
-                                                :disabled="!isWithinWithdrawalPeriod(request.start_date)"
+                                                @click.stop="openRejectForm(request)"
+                                                :disabled="!isWithinWithdrawalPeriod(request.start_date) || request.withdrawn === true"
                                             >
                                                 Withdraw
                                             </button>
+
                                         </td>
                                     </tr>
-                                </tbody>
-                            </table>
-                            <div v-if="showForm" class="form-overlay">
-                                <div class="form-container">
-                                    <div class="form-header">
-                                        <h3 class="form-title">Withdraw WFH Request</h3>
-                                    </div>
-                                    <div class="table-wrapper">
-                                        <table class="table table-bordered" style="overflow:scroll;">
+        
+                                    <!-- Expanded Content Row -->
+                                    <tr v-if="expandedRequestId === request.request_id && request.is_recurring">
+                                    <td colspan="7" class="p-0">
+                                        <div class="mx-3 my-2">
+                                        <table class="table table-hover table-light">
                                             <thead class="thead-light">
                                                 <tr>
-                                                    <th>Date Requested</th>
-                                                    <th>Start Date</th>
-                                                    <th>End Date</th>
-                                                    <th>Reason</th>
+                                                    <th>Schedule ID</th>
+                                                    <th>Date</th>
+                                                    <th>Request Type</th>
+                                                    <th>Status</th>
+                                                    <th>Action</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr>
-                                                    <td>{{ formatDate(selectedRequest.request_date) }}</td>
-                                                    <td>{{ formatDate(selectedRequest.start_date) }}</td>
-                                                    <td>{{ selectedRequest.end_date ? formatDate(selectedRequest.end_date) : '-' }}</td>
-                                                    <td>{{ selectedRequest.reason_for_applying }}</td>
+                                                <tr v-for="(schedule, index) in request.schedules" :key="index">
+                                                    <td>{{ schedule.schedule_id }}</td>
+                                                    <td>{{ formatDate(schedule.date) }}</td>
+                                                    <td>
+                                                        <span v-if="request.is_recurring" class="badge bg-info ms-1">Recurring</span>
+                                                        <span v-if="request.duration === 'FULL_DAY'" class="badge bg-success ms-1">FULL DAY</span>
+                                                        <span v-else-if="request.duration === 'HALF_DAY_AM'" class="badge bg-warning text-dark ms-1">AM</span>
+                                                        <span v-else-if="request.duration === 'HALF_DAY_PM'" class="badge bg-warning text-dark ms-1">PM</span>
+                                                    </td>
+                                                    <td>
+                                                        <span :class="getRequestStatus(schedule.status)">{{ schedule.status }}</span>
+                                                    </td>
+                                                    <td>
+                                                        <button
+                                                            v-if="schedule.status === 'APPROVED'"
+                                                            :class="{
+                                                                'btn btn-warning btn-sm': isWithinWithdrawalPeriod(schedule.date) && !schedule.withdrawn,
+                                                                'btn btn-secondary btn-sm': !isWithinWithdrawalPeriod(schedule.date) || schedule.withdrawn
+                                                            }"
+                                                            @click.stop="openRejectForm(request, schedule)"
+                                                            :disabled="!isWithinWithdrawalPeriod(schedule.date) || schedule.withdrawn"
+                                                        >
+                                                            Withdraw
+                                                        </button>
+                                                    </td>
                                                 </tr>
                                             </tbody>
-                                        </table>
-                                    </div>
-                                    <div class="form-group text-left px-5">
-                                        <label for="rej_reason" class="form-label">Reason for withdrawal:</label>
-                                        <textarea id="rej_reason" v-model="rej_reason" required class="form-control w-100" rows="3"></textarea>
-                                    </div>
-                                    <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
-                                    <div class="form-actions">
-                                        <button type="button" @click="withdrawRequest" class="btn btn-danger">Withdraw</button>
-                                        <button type="button" @click="closeForm" class="btn btn-secondary">Cancel</button>
-                                    </div>
+                                     </table>
                                 </div>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>                  
+                    </table>
+                    <div v-if="showForm" class="form-overlay">
+                        <div class="form-container">
+                            <div class="form-header">
+                                <h3 class="form-title">Withdraw WFH Request</h3>
+                            </div>
+                            <div class="table-wrapper">
+                                <table class="table table-bordered" style="overflow:scroll;">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th>Date Requested</th>
+                                            <th>Start Date</th>
+                                            <th>End Date</th>
+                                            <th>Reason</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>{{ formatDate(selectedRequest.request_date) }}</td>
+                                            <td>{{ formatDate(selectedRequest.start_date) }}</td>
+                                            <td>{{ selectedRequest.end_date ? formatDate(selectedRequest.end_date) : '-' }}</td>
+                                            <td>{{ selectedRequest.reason_for_applying }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="form-group text-left px-5">
+                                <label for="rej_reason" class="form-label">Reason for withdrawal:</label>
+                                <textarea id="rej_reason" v-model="rej_reason" required class="form-control w-100" rows="3"></textarea>
+                            </div>
+                            <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+                            <div class="form-actions">
+                                <button type="button" @click="withdrawRequest" class="btn btn-danger">Withdraw</button>
+                                <button type="button" @click="closeForm" class="btn btn-secondary">Cancel</button>
                             </div>
                         </div>
-                        <p v-else class="text-muted">
-                            No {{ filterStatus === 'All' ? '' : filterStatus }} requests found.
-                        </p>
                     </div>
                 </div>
+                <p v-else class="text-muted">
+                    No {{ filterStatus === 'All' ? '' : filterStatus }} requests found.
+                </p>
             </div>
         </div>
+    </div>
+</div>
 
 <!-- Cancel Confirmation Modal -->
 <div v-if="showCancelConfirmation" class="form-overlay">
@@ -155,6 +208,11 @@ const showForm = ref(false);
 const rej_reason = ref('');
 const showCancelConfirmation = ref(false);
 const requestToCancel = ref(null);
+const expandedRequestId = ref(null);
+const scheduleIds = ref([]);
+const selectedRequest = ref([]);
+const errorMessage = ref('');
+const isLoading = ref(false);
 
 
 // error here
@@ -223,6 +281,7 @@ const closeCancelConfirmation = () => {
 };
 
 const isWithinWithdrawalPeriod = (applicationDate) => {
+    // console.log('request', applicationDate)
     const appDate = new Date(applicationDate);
     const today = new Date();
 
@@ -235,27 +294,71 @@ const isWithinWithdrawalPeriod = (applicationDate) => {
     return appDate >= twoWeeksBefore && appDate <= twoWeeksAfter;
 };
 
-const openRejectForm = (request) => {
-  // Log the request to inspect the data passed
-  console.log('Request data:', request);
 
-  // Check if the request object and date fields are defined
-  if (!request || !request.request_date || !request.start_date) {
-    console.error('Invalid request data:', request);
+// fetch schedules by request_id 
+const fetchScheduleIds = async (request_id) => {
+    try {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/schedules-by-request-id/${request_id}`);
 
-    return;
-  }
-
-  // Assign the selected request and open the form
-  selectedRequest.value = request;
-  showForm.value = true;
+        if (response.data) {
+            console.log('Fetched schedule IDs:', response.data.schedules);
+            return response.data.schedules;
+        } else {
+            console.warn('No schedule IDs found for this request.');
+            return [];
+        }
+    } catch (error) {
+        console.error('Error fetching schedule IDs:', error);
+        alert('Error fetching schedule IDs');
+        return [];
+    }
+};
+const toggleExpandRequest = async (request) => {
+    if (expandedRequestId.value === request.request_id) {
+        expandedRequestId.value = null;
+        scheduleIds.value = [];
+    } else {
+        expandedRequestId.value = request.request_id;
+        scheduleIds.value = await fetchScheduleIds(request.request_id);
+    }
 };
 
-const closeForm = () => {
-  showForm.value = false;
-  rej_reason.value = '';
-  errorMessage.value = '';
-  };
+// check if request has been withdrawn before
+const checkWithdrawalStatus = async (request_id, date) => {
+    try {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/check-withdrawal/${request_id}?schedule_date=${date}`)
+        return response.data.withdrawn; // Return the withdrawal status
+    } catch (error) {
+        console.error('Error checking withdrawal status:', error);
+        return false; 
+    }
+};
+
+const checkAllWithdrawalStatuses = async () => {
+    isLoading.value = true;
+    try {
+        for (const request of allRequests.value) {
+            if (request.status === 'APPROVED') {
+                if (request.is_recurring) {
+                    const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/schedules-by-request-id/${request.request_id}`);
+                    const schedules = response.data.schedules;
+
+                    for (const schedule of schedules) {
+                        const formattedDate = formatScheduleDate(schedule.date);
+                        schedule.withdrawn = await checkWithdrawalStatus(request.request_id, formattedDate);
+                        schedule.status = request.status;
+                    }
+                    request.schedules = schedules;
+                } else {
+                    request.withdrawn = await checkWithdrawalStatus(request.request_id, request.start_date);
+                }
+            }
+        }
+    } finally {
+        isLoading.value = false
+    }
+};
+
 
 const withdrawRequest = async (request_id) => {
     if (!rej_reason.value.trim()) {
@@ -263,24 +366,74 @@ const withdrawRequest = async (request_id) => {
         return;
     }
 
+    console.log('Selected Request Data:', selectedRequest.value); // Log entire selected request
+    console.log('Schedule ID being sent:', selectedRequest.value.schedule_id); // Log specific schedule_id
+    console.log('Rejection Reason:', rej_reason.value); // Log rejection reason
+
     errorMessage.value = '';
     try {
-        const response = await axios.patch(`${import.meta.env.VITE_API_URL}/api/update-request`, {
-            request_id: selectedRequest.value.request_id,
-            request_status: 'WITHDRAWN',
+        const schedule_id = selectedRequest.value.schedule_id;
+        
+        const requestData = {
+            schedule_id: schedule_id,
+            status: 'WITHDRAWN',
             reason: rej_reason.value
-        });
+        };
+        
+        console.log('Data being sent to API:', requestData); // Log complete payload
 
-        console.log('Withdrawal response:', response.data);
+        const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/create-withdraw-request`, requestData);
+        
+        console.log('API Response:', response.data); // Log API response
         closeForm();
         await fetchRequests();
+        await checkAllWithdrawalStatuses();
     } catch (error) {
         console.error('Error withdrawing request:', error);
+        console.log('Error details:', error.response?.data); // Log error details if available
         alert('Error withdrawing request');
     }
 };
 
+const openRejectForm = async (request, schedule = null) => {
+    console.log('Original Request:', request); // Log incoming request
+    console.log('Schedule (if recurring):', schedule); // Log schedule if it exists
+    
+    try {
+        if (schedule) {
+            const modifiedRequest = {
+                ...request,
+                start_date: schedule.date,
+                end_date: null,
+                schedule_id: schedule.schedule_id
+            };
+            console.log('Modified Request (recurring):', modifiedRequest); // Log modified recurring request
+            selectedRequest.value = modifiedRequest;
+        } else {
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/schedules-by-request-id/${request.request_id}`);
+            console.log('API Response for schedule:', response.data.schedules); // Log API response
+            
+            const modifiedRequest = {
+                ...request,
+                schedule_id: response.data.schedules.map(schedule => schedule.schedule_id)[0]
+            };
+            console.log('Modified Request (non-recurring):', modifiedRequest); // Log modified non-recurring request
+            selectedRequest.value = modifiedRequest;
+        }
+        
+        showForm.value = true;
+    } catch (error) {
+        console.error('Error getting schedule data:', error);
+        console.log('Error details:', error.response?.data); // Log error details if available
+        alert('Error opening withdrawal form');
+    }
+};
 
+const closeForm = () => {
+  showForm.value = false;
+  rej_reason.value = '';
+  errorMessage.value = '';
+  };
 
 
 const formatDate = (dateString) => {
@@ -314,16 +467,23 @@ const getStatusButtonClass = (requestStatus) => {
     }
 };
 
-onMounted(() => {
+function formatScheduleDate(dateStr) {
+    const date = new Date(dateStr);  // Parse the date string
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');  // getMonth is 0-based
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
+}
+onMounted(async () => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
         userData.value = JSON.parse(storedUser);
-        fetchRequests();
+        await fetchRequests();
+        await checkAllWithdrawalStatuses();
+    
     }
-})
-
-const selectedRequest = ref(null);
-const errorMessage = ref('');
+});
 
 </script>
 
@@ -650,4 +810,34 @@ button:hover {
 .toggle-button.active:has(:contains("Others")) {
     color: #6c757d;
 }
+
+  /* Loading Overlay Styles */
+  .loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(255, 255, 255, 0.8);
+  z-index: 9999;
+}
+
+.spinner {
+  position: fixed;
+  top: 50vh;        /* Changed to vh units */
+  left: 50vw;       /* Changed to vw units */
+  transform: translate(-50%, -50%);
+  border: 8px solid #f3f3f3;
+  border-top: 8px solid #3498db;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+  
 </style>
