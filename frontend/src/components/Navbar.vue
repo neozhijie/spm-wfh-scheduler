@@ -2,7 +2,10 @@
   <div :style="{ height: `${navbarHeight}px` }"></div>
   <nav class="navbar navbar-expand-lg custom-navbar" ref="navbar">
     <div class="container-fluid">
-      <a class="navbar-brand" href="#">WFH Scheduler</a>
+      <a class="navbar-brand d-flex align-items-center" href="#">
+    <img :src="companyLogo" alt="Company Logo" class="company-logo">
+    <span class="ms-2">WFH Scheduler</span>
+  </a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -65,6 +68,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import companyLogo from '../assets/images/company-logo.jpg';
 
 const router = useRouter();
 const user = ref({});
@@ -239,5 +243,33 @@ const logout = () => {
 .dropdown-item:hover {
   background-color: #1e2a6d;
   color: #C69200;
+}
+
+.navbar-brand {
+  margin-right: 1rem;
+  white-space: nowrap;
+}
+
+.company-logo {
+  height: 40px;
+  width: auto;
+  max-width: 150px;
+  object-fit: contain;
+}
+
+/* Ensure the navbar-toggler stays on the right */
+.navbar > .container-fluid {
+  justify-content: space-between;
+}
+
+/* Responsive adjustments */
+@media (max-width: 991.98px) {
+  .company-logo {
+    height: 30px;
+  }
+  
+  .navbar-brand {
+    font-size: 0.9rem;
+  }
 }
 </style>

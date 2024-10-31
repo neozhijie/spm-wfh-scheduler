@@ -1,6 +1,9 @@
 <template>
     <div class="login-container">
       <div class="login-form-container">
+        <div class="logo-container">
+        <img :src="companyLogo" alt="Company Logo" class="company-logo">
+      </div>
         <div class="app-title">WFH Scheduler</div>
         <div class="login-form">
           <form @submit.prevent="handleLogin">
@@ -27,6 +30,7 @@
   import { ref } from 'vue';
   import { useRouter } from 'vue-router';
   import axios from 'axios';
+  import companyLogo from '@/assets/images/company-logo.jpg';
   
   const router = useRouter();
   const email = ref('');
@@ -68,15 +72,25 @@
     background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('@/assets/images/login-image.jpg');
     background-size: cover;
     background-position: center;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+
+  .company-logo {
+  height: 60px;
+  width: auto;
+  max-width: 200px;
+  object-fit: contain;
   }
   
   .login-form-container {
     background-color: rgba(255, 255, 255, 0.95);
-    padding: 2rem;
+    padding: 2.5rem 2rem;
     border-radius: 15px;
     width: 100%;
     max-width: 400px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    animation: fadeIn 0.6s ease-out;
   }
   
   .app-title {
@@ -96,6 +110,8 @@
   
   .form-group {
     margin-bottom: 1.5rem;
+    opacity: 0;
+    animation: fadeIn 0.6s ease-out forwards;
   }
   
   label {
@@ -113,6 +129,7 @@
     border-radius: 4px;
     font-size: 1rem;
     transition: border-color 0.3s ease;
+    transition: all 0.3s ease;
   }
   
   input:focus {
@@ -131,6 +148,10 @@
     font-size: 1rem;
     font-weight: 600;
     transition: background-color 0.3s ease;
+    opacity: 0;
+    animation: fadeIn 0.6s ease-out forwards;
+    animation-delay: 0.6s;
+    transition: all 0.3s ease;
   }
   
   button:hover {
@@ -141,5 +162,35 @@
     color: #e74c3c;
     text-align: center;
     margin-top: 1rem;
+    transition: all 0.3s ease;
   }
+
+  @media (max-width: 576px) {
+  .company-logo {
+    height: 45px;
+  }
+  
+  .app-title {
+    font-size: 2rem;
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.form-group:nth-child(1) {
+  animation-delay: 0.2s;
+}
+
+.form-group:nth-child(2) {
+  animation-delay: 0.4s;
+}
+
+
   </style>
