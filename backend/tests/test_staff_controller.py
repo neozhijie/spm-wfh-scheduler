@@ -3,7 +3,8 @@ import json
 from app import create_app, db
 from config import TestConfig
 from app.models.staff import Staff
-
+from unittest.mock import patch
+from app.services.staff_service import StaffService
 
 class StaffControllerTestCase(unittest.TestCase):
     def setUp(self):
@@ -88,11 +89,34 @@ class StaffControllerTestCase(unittest.TestCase):
             data = response.get_json()
         self.assertEqual(str(context.exception), "No staff found with id: 999")
 
+
     def test_get_staff_by_id_invalid_id(self):
         response = self.client.get("/api/staff/abc")  # Non-integer ID
         self.assertEqual(
             response.status_code, 404
         )  # Flask treats this as a 404 because the route expects an integer
+
+    def test_get_departments_success(self):
+        """Test successful retrieval of departments"""
+        test_departments = ["Engineering", "HR", "Finance"]
+        
+        # Mock the StaffService.get_departments method
+        with patch.object(StaffService, 'get_departments', return_value=test_departments):
+            response = self.client.get("/api/departments")
+            data = response.get_json()
+            
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(data, test_departments)
+
+    def test_get_departments_error(self):
+        """Test error handling in get_departments endpoint"""
+        # Mock StaffService.get_departments to raise an exception
+        with patch.object(StaffService, 'get_departments', side_effect=Exception("Database error")):
+            response = self.client.get("/api/departments")
+            data = response.get_json()
+            
+            self.assertEqual(response.status_code, 500)
+            self.assertEqual(data["message"], "An error occurred: Database error")
 
 
 if __name__ == "__main__":

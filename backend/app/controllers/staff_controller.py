@@ -27,8 +27,6 @@ def login():
 @staff_bp.route('/staff/<int:staff_id>', methods=['GET'])
 def get_staff_by_id(staff_id):
     staff = StaffService.get_staff_by_id(staff_id)
-    if not staff:
-        abort(404, description="Staff not found")
     return jsonify(staff.to_dict()), 200
 
 @staff_bp.route('/departments', methods=['GET'])

@@ -11,7 +11,6 @@ from app.services.wfh_request_service import WFHRequestService
 from app.services.wfh_schedule_service import WFHScheduleService
 
 
-
 class WFHControllerTestCase(unittest.TestCase):
     def setUp(self):
         self.app = create_app(TestConfig)
@@ -134,6 +133,13 @@ class WFHControllerTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(resp_data), 0)
 
+    def test_get_pending_requests_exception(self):
+        with patch('app.services.wfh_request_service.WFHRequestService.get_pending_requests_for_manager', 
+                side_effect=Exception("Database error")):
+            response = self.client.get(f"/api/pending-requests/{self.manager.staff_id}")
+            self.assertEqual(response.status_code, 500)
+            self.assertIn("An error occurred", response.get_json()["message"])
+
     def test_update_wfh_request_approve(self):
         # Create a pending request
         wfh_request = WFHRequest(
@@ -212,6 +218,62 @@ class WFHControllerTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("Successfully updated request", response.get_data(as_text=True))
 
+    def test_update_wfh_request_approve_with_violations(self):
+        # Create a recurring request
+        wfh_request = WFHRequest(
+            staff_id=self.staff.staff_id,
+            manager_id=self.manager.staff_id,
+            request_date=self.today,
+            start_date=datetime.strptime(self.future_date, "%Y-%m-%d").date(),
+            end_date=(datetime.strptime(self.future_date, "%Y-%m-%d") + timedelta(days=14)).date(),
+            reason_for_applying="Recurring request",
+            duration="FULL_DAY",
+        )
+        db.session.add(wfh_request)
+        db.session.commit()
+
+        with patch('app.services.wfh_check_service.WFHCheckService.check_team_count', 
+                return_value='Policy violated'):
+            data = {
+                "request_id": wfh_request.request_id,
+                "request_status": "APPROVED",
+                "reason": "",
+            }
+            response = self.client.patch(
+                "/api/update-request",
+                data=json.dumps(data),
+                content_type="application/json",
+            )
+            self.assertEqual(response.status_code, 400)
+            self.assertIn("Cannot approve request due to policy violation", response.get_json()["message"])
+
+    def test_update_wfh_request_general_exception_during_update(self):
+        wfh_request = WFHRequest(
+            staff_id=self.staff.staff_id,
+            manager_id=self.manager.staff_id,
+            request_date=self.today,
+            start_date=datetime.strptime(self.future_date, "%Y-%m-%d").date(),
+            reason_for_applying="Test request",
+            duration="FULL_DAY",
+        )
+        db.session.add(wfh_request)
+        db.session.commit()
+
+        with patch('app.services.wfh_schedule_service.WFHScheduleService.update_schedule', 
+                side_effect=Exception("Database error")):
+            data = {
+                "request_id": wfh_request.request_id,
+                "request_status": "APPROVED",
+                "reason": "",
+            }
+            response = self.client.patch(
+                "/api/update-request",
+                data=json.dumps(data),
+                content_type="application/json",
+            )
+            self.assertEqual(response.status_code, 500)
+            self.assertIn("An error occurred", response.get_json()["message"])
+
     def test_reject_expired_request(self):
         # Create an expired request
         expired_date = (self.today - timedelta(days=61)).strftime("%Y-%m-%d")
@@ -245,6 +307,13 @@ class WFHControllerTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("Updated requests to 'EXPIRED'.", resp_data["message"])
 
+    def test_reject_expired_request_exception(self):
+        with patch('app.services.wfh_request_service.WFHRequestService.reject_expired', 
+                side_effect=Exception("Database error")):
+            response = self.client.post("/api/reject-expired-request")
+            self.assertEqual(response.status_code, 500)
+            self.assertIn("An error occurred", response.get_json()["message"])
+
     def test_check_wfh_count(self):
         data = {"staff_id": self.staff.staff_id, "date": self.future_date, "duration" : "FULL_DAY"}
         response = self.client.post(
@@ -254,6 +323,22 @@ class WFHControllerTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_data(as_text=True), "done")
+
+    def test_check_wfh_count_exception(self):
+        with patch('app.services.wfh_check_service.WFHCheckService.check_team_count', 
+                side_effect=Exception("Check failed")):
+            data = {
+                "staff_id": self.staff.staff_id,
+                "date": self.future_date,
+                "duration": "FULL_DAY"
+            }
+            response = self.client.post(
+                "/api/check-wfh-count",
+                data=json.dumps(data),
+                content_type="application/json",
+            )
+            self.assertEqual(response.status_code, 500)
+            self.assertIn("An error occurred", response.get_json()["message"])
 
 
 ##For manager schedule related endpoints
@@ -307,6 +392,13 @@ class WFHControllerTestCase(unittest.TestCase):
         data = response.get_json()
         self.assertEqual(response.status_code, 200)
         self.assertEqual(data, {'date': date_str, 'staff': []})
+
+    def test_manager_schedule_summary_with_end_date(self):
+        end_date = (datetime.now() + timedelta(days=30)).strftime('%Y-%m-%d')
+        response = self.client.get(
+            f'/api/manager-schedule-summary/{self.manager.staff_id}?end_date={end_date}'
+        )
+        self.assertEqual(response.status_code, 200)
 
     def test_manager_schedule_detail_no_schedules(self):
         manager_id = self.manager.staff_id
@@ -401,6 +493,13 @@ class WFHControllerTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 500)
         data = response.get_json()
         self.assertIn('An error occurred', data['message'])
+
+    def test_personal_schedule_with_end_date(self):
+        end_date = (datetime.now() + timedelta(days=30)).strftime('%Y-%m-%d')
+        response = self.client.get(
+            f'/api/personal-schedule/{self.staff.staff_id}?end_date={end_date}'
+        )
+        self.assertEqual(response.status_code, 200)
 
     def test_update_wfh_request_cancel(self):
         # Create a pending request
@@ -667,6 +766,40 @@ class WFHControllerTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.get_json(), {"message": "Exceeded date range"})
 
+    def test_create_wfh_request_with_end_date(self):
+        data = {
+            "staff_id": self.staff.staff_id,
+            "manager_id": self.manager.staff_id,
+            "reason_for_applying": "Recurring WFH request",
+            "date": self.future_date,
+            "end_date": (datetime.strptime(self.future_date, "%Y-%m-%d") + timedelta(days=14)).strftime("%Y-%m-%d"),
+            "duration": "FULL_DAY",
+            "dept": self.staff.dept,
+            "position": self.staff.position,
+        }
+        response = self.client.post(
+            "/api/request", data=json.dumps(data), content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 201)
+
+    def test_create_wfh_request_general_exception(self):
+        with patch('app.services.wfh_request_service.WFHRequestService.create_request', 
+                side_effect=Exception("Unexpected error")):
+            data = {
+                "staff_id": self.staff.staff_id,
+                "manager_id": self.manager.staff_id,
+                "reason_for_applying": "Test request",
+                "date": self.future_date,
+                "duration": "FULL_DAY",
+                "dept": self.staff.dept,
+                "position": self.staff.position,
+            }
+            response = self.client.post(
+                "/api/request", data=json.dumps(data), content_type="application/json"
+            )
+            self.assertEqual(response.status_code, 500)
+            self.assertIn("An error occurred", response.get_json()["message"])
+
     def test_update_wthdraw_request_success_approved(self):
         # happy path -> APPROVE WITHDRAWAL
         start_date = datetime.today().date() + timedelta(days=2)
@@ -844,11 +977,82 @@ class WFHControllerTestCase(unittest.TestCase):
 
             self.assertEqual(response.status_code, 404)
 
+    def test_staff_schedule_summary(self):
+        response = self.client.get(
+            f'/api/staff-schedule-summary/{self.manager.staff_id}?staff_id={self.staff.staff_id}'
+        )
+        self.assertEqual(response.status_code, 200)
 
-    
-        
-        
+    def test_staff_schedule_summary_with_dates(self):
+        start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+        end_date = (datetime.now() + timedelta(days=30)).strftime('%Y-%m-%d')
+        response = self.client.get(
+            f'/api/staff-schedule-summary/{self.manager.staff_id}?'
+            f'start_date={start_date}&end_date={end_date}&staff_id={self.staff.staff_id}'
+        )
+        self.assertEqual(response.status_code, 200)
 
+    def test_staff_schedule_summary_exception(self):
+        with patch('app.services.wfh_schedule_service.WFHScheduleService.get_staff_schedule_summary', 
+                side_effect=Exception("Database error")):
+            response = self.client.get(
+                f'/api/staff-schedule-summary/{self.manager.staff_id}?staff_id={self.staff.staff_id}'
+            )
+            self.assertEqual(response.status_code, 500)
+            self.assertIn("An error occurred", response.get_json()["message"])
+
+    def test_staff_schedule_detail_success(self):
+        date = datetime.now().strftime('%Y-%m-%d')
+        response = self.client.get(f'/api/staff-schedule-detail/{self.staff.staff_id}/{date}')
+        self.assertEqual(response.status_code, 200)
+
+    def test_staff_schedule_detail_exception(self):
+        date = datetime.now().strftime('%Y-%m-%d')
+        with patch('app.services.wfh_schedule_service.WFHScheduleService.get_staff_schedule_detail', 
+                side_effect=Exception("Database error")):
+            response = self.client.get(f'/api/staff-schedule-detail/{self.staff.staff_id}/{date}')
+            self.assertEqual(response.status_code, 500)
+            self.assertIn("An error occurred", response.get_json()["message"])
+
+    def test_hr_schedule_summary(self):
+        response = self.client.get('/api/hr-schedule-summary')
+        self.assertEqual(response.status_code, 200)
+
+    def test_hr_schedule_detail(self):
+        date = datetime.now().strftime('%Y-%m-%d')
+        response = self.client.get(f'/api/hr-schedule-detail/{date}')
+        self.assertEqual(response.status_code, 200)
+
+    def test_hr_schedule_detail_invalid_date(self):
+        response = self.client.get('/api/hr-schedule-detail/invalid-date')
+        self.assertEqual(response.status_code, 500)
+
+    def test_hr_schedule_summary_with_dates(self):
+        start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+        end_date = (datetime.now() + timedelta(days=30)).strftime('%Y-%m-%d')
+        response = self.client.get(
+            f'/api/hr-schedule-summary?start_date={start_date}&end_date={end_date}'
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_hr_schedule_summary_exception(self):
+        with patch('app.services.wfh_schedule_service.WFHScheduleService.get_hr_schedule_summary', 
+                side_effect=Exception("Database error")):
+            response = self.client.get('/api/hr-schedule-summary')
+            self.assertEqual(response.status_code, 500)
+            self.assertIn("An error occurred", response.get_json()["message"])
+
+    def test_get_staff_requests(self):
+        response = self.client.get(f'/api/staff-requests/{self.staff.staff_id}')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("staff_requests", response.get_json())
+
+    def test_get_staff_requests_exception(self):
+        with patch('app.services.wfh_request_service.WFHRequestService.get_staff_requests', 
+                side_effect=Exception("Database error")):
+            response = self.client.get(f'/api/staff-requests/{self.staff.staff_id}')
+            self.assertEqual(response.status_code, 500)
+            self.assertIn("An error occurred", response.get_json()["message"])
 
 
 if __name__ == "__main__":
