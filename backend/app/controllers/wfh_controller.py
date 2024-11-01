@@ -172,7 +172,11 @@ def update_wfh_request():
         if response == True:
             if new_request_status == 'APPROVED' and request_obj.duration == "WITHDRAWAL REQUEST":
                 new_request_status = "WITHDRAWN"
+
             response2 = WFHScheduleService.update_schedule(request_id, new_request_status)
+            if new_request_status == 'REJECTED' and request_obj.duration == "WITHDRAWAL REQUEST":
+                schedule = WFHSchedule.query.filter_by(request_id=request_id).first()
+                WFHScheduleService.orig_schedule_request_id(schedule.schedule_id)
 
             if response2 == True:
                 print("Successfully updated")

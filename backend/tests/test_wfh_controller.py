@@ -853,7 +853,8 @@ class WFHControllerTestCase(unittest.TestCase):
             duration="FULL_DAY",
             status="APPROVED",
             dept=self.staff.dept,
-            position=self.staff.position
+            position=self.staff.position,
+            reason_for_withdrawing = 2
         )
 
         wfh_request = WFHRequest(

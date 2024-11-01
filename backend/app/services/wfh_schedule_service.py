@@ -534,13 +534,30 @@ class WFHScheduleService:
         }
 
     @staticmethod
-    def change_schedule_request_id(schedule_id, request_id):
+    def change_schedule_request_id(schedule_id, new_request_id):
         try:
             schedule = WFHSchedule.query.filter(
                 WFHSchedule.schedule_id == schedule_id
             ).first()
             if schedule:
-                schedule.request_id = request_id
+                orginal_request_id = schedule.request_id
+                schedule.reason_for_withdrawing = orginal_request_id
+                schedule.request_id = new_request_id
+                db.session.commit()
+                return schedule.request_id
+            
+        except Exception as e:
+            print(f"Error in updating schedule request id")
+
+    @staticmethod
+    def orig_schedule_request_id(schedule_id):
+        try:
+            schedule = WFHSchedule.query.filter(
+                WFHSchedule.schedule_id == schedule_id
+            ).first()
+            if schedule:
+                orginal_request_id = schedule.reason_for_withdrawing
+                schedule.request_id = orginal_request_id
                 db.session.commit()
                 return schedule.request_id
             
