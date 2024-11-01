@@ -820,33 +820,43 @@ class WFHControllerTestCase(unittest.TestCase):
             manager_id=self.manager.staff_id,
             request_date=self.today,
             start_date=start_date,
-            reason_for_applying="Applied wrongly",
+            reason_for_applying="I wana WFH",
+            duration="FULL_DAY",
+            status="APPROVED",
+        )
+        wfh_request_withdraw = WFHRequest(
+            staff_id=self.staff.staff_id,
+            manager_id=self.manager.staff_id,
+            request_date=self.today,
+            start_date=start_date,
+            status="PENDING",
+            reason_for_applying="wrong input!",
             duration="WITHDRAWAL REQUEST",
         )
 
         db.session.add(wfh_schedule)
         db.session.add(wfh_request)
+        db.session.add(wfh_request_withdraw)
         db.session.commit()
 
         response = self.client.patch(
         '/api/update-request',
         json={  # Use json= instead of data=
-            'request_id': 1,
+            'request_id': 2,
             'request_status': "APPROVED",
             'reason' : ''
         }
         )
-
         self.assertEqual(response.status_code, 200)
         self.assertEqual(wfh_schedule.status, "WITHDRAWN")
         self.assertEqual(response.get_json(), "Successfully updated request 1 as WITHDRAWN")
 
-    def test_update_wthdraw_request_success_reject(self):
-        # happy path -> REJECT WITHDRAWAL
+    def test_update_wthdraw_request_success_approved(self):
+    # happy path -> APPROVE WITHDRAWAL
         start_date = datetime.today().date() + timedelta(days=2)
 
         wfh_schedule = WFHSchedule(
-            request_id=1,
+            request_id=2,
             staff_id=self.staff.staff_id,
             manager_id=self.manager.staff_id,
             date=start_date,
@@ -854,7 +864,7 @@ class WFHControllerTestCase(unittest.TestCase):
             status="APPROVED",
             dept=self.staff.dept,
             position=self.staff.position,
-            reason_for_withdrawing = 2
+            reason_for_withdrawing=1
         )
 
         wfh_request = WFHRequest(
@@ -862,26 +872,37 @@ class WFHControllerTestCase(unittest.TestCase):
             manager_id=self.manager.staff_id,
             request_date=self.today,
             start_date=start_date,
-            reason_for_applying="Applied wrongly",
+            reason_for_applying="I wana WFH",
+            duration="FULL_DAY",
+            status="APPROVED",
+        )
+        wfh_request_withdraw = WFHRequest(
+            staff_id=self.staff.staff_id,
+            manager_id=self.manager.staff_id,
+            request_date=self.today,
+            start_date=start_date,
+            status="PENDING",
+            reason_for_applying="wrong input!",
             duration="WITHDRAWAL REQUEST",
         )
 
         db.session.add(wfh_schedule)
         db.session.add(wfh_request)
+        db.session.add(wfh_request_withdraw)
         db.session.commit()
 
         response = self.client.patch(
-        '/api/update-request',
-        json={  # Use json= instead of data=
-            'request_id': 1,
-            'request_status': "REJECTED",
-            'reason' : ''
-        }
+            '/api/update-request',
+            json={
+                'request_id': 2,
+                'request_status': "APPROVED",
+                'reason': ''
+            }
         )
-
+      
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(wfh_schedule.status, "APPROVED")
-        self.assertEqual(response.get_json(), "Successfully updated request 1 as REJECTED")
+        self.assertEqual(wfh_schedule.status, "WITHDRAWN")
+        self.assertEqual(response.get_json(), "Successfully updated request 2 as WITHDRAWN")
 
     def test_update_wthdraw_request_fail_non_existent_request(self):
         # NEGATIVE TEST CASE - NO WITHDRAWAL REQUEST TO WITHDRAW
