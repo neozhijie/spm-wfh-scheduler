@@ -137,3 +137,10 @@ class WFHRequestService:
     def get_staff_requests(staff_id):
         return WFHRequest.query.filter_by(staff_id = staff_id).all()
 
+    @staticmethod
+    def check_withdrawal(staff_id, start_date):
+        withdrawal_request_count = WFHRequest.query.filter_by(
+            staff_id=staff_id, start_date=start_date
+        ).count()
+        
+        return withdrawal_request_count > 1 

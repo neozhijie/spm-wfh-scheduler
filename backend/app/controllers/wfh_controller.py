@@ -170,16 +170,9 @@ def update_wfh_request():
         response = WFHRequestService.update_request(
             request_id, new_request_status, two_months_ago, reason)
         if response == True:
-            schedule = WFHSchedule.query.filter_by(request_id=request_id).first()
             if new_request_status == 'APPROVED' and request_obj.duration == "WITHDRAWAL REQUEST":
                 new_request_status = "WITHDRAWN"
-                original_request = WFHRequest.query.filter_by(request_id=int(schedule.reason_for_withdrawing)).first()
-                if original_request.end_date is None:
-                    original_request.status = "WITHDRAWN"
-
             response2 = WFHScheduleService.update_schedule(request_id, new_request_status)
-            if new_request_status == 'REJECTED' and request_obj.duration == "WITHDRAWAL REQUEST":
-                WFHScheduleService.orig_schedule_request_id(schedule.schedule_id)
 
             if response2 == True:
                 print("Successfully updated")
@@ -429,4 +422,41 @@ def create_cancel_request():
         print(f"ERROR: An exception occurred while creating cancel request")
         print(f"Exception details: {str(e)}")
         print("===== CREATE CANCEL REQUEST FAILED =====\n")
+        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+    
+@wfh_bp.route('/schedules-by-request-id/<request_id>', methods=['GET'])
+def get_schedules_by_request_id(request_id):
+    try:
+        # Fetch schedule data from the service
+        data = WFHScheduleService.get_schedules_by_request_id(request_id)
+        print("Schedules fetched successfully")
+        return jsonify(data), 200
+    except Exception as e:
+        print(f"Error in get_schedules_by_request_id: {str(e)}")
+        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+    
+@wfh_bp.route('/check-withdrawal/<request_id>', methods=['GET'])
+def check_withdrawal(request_id):
+    # Fetch the request from the database using the request_id
+    wfhrequest = WFHRequest.query.filter_by(request_id=request_id).first()
+    
+    if wfhrequest:
+        staff_id = wfhrequest.staff_id
+        schedule_date = request.args.get('schedule_date', wfhrequest.start_date)
+        withdrawal_exists = WFHRequestService.check_withdrawal(staff_id, schedule_date)
+        
+        return jsonify({'withdrawn': withdrawal_exists}), 200
+    else:
+        # Handle the case where the request is not found
+        return jsonify({'message': 'Request not found'}), 404
+    
+@wfh_bp.route('/schedules-by-ori-request-id/<request_id>', methods=['GET'])
+def get_schedules_by_ori_request_id(request_id):
+    try:
+        # Fetch schedule data from the service
+        data = WFHScheduleService.get_schedules_by_ori_req_id(request_id)
+        print("Schedules fetched successfully")
+        return jsonify(data), 200
+    except Exception as e:
+        print(f"Error in get_schedules_by_request_id: {str(e)}")
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500

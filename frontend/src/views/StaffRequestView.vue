@@ -220,13 +220,38 @@ const filteredRequests = computed(() => {
     if (filterStatus.value === 'All') {
         return allRequests.value;
     } else if (filterStatus.value === 'Others') {
-        return allRequests.value.filter(request =>
-            ['EXPIRED', 'CANCELLED', 'WITHDRAWN'].includes(request.status)
-        );
+        return allRequests.value.filter(request => {
+            if (request.is_recurring && request.schedules) {
+                // Filter schedules to include only those that belong to "Others" statuses
+                request.filteredSchedules = request.schedules.filter(schedule =>
+                    ['EXPIRED', 'CANCELLED', 'WITHDRAWN'].includes(schedule.status)
+                );
+                // Show the request in "Others" only if there are matching schedules
+                return request.filteredSchedules.length > 0;
+            }
+            // For non-recurring requests, check if the main request status belongs to "Others"
+            return ['EXPIRED', 'CANCELLED', 'WITHDRAWN'].includes(request.status);
+        });
     } else {
-        return allRequests.value.filter(request => request.status === filterStatus.value.toUpperCase());
+        return allRequests.value.filter(request => {
+            if (request.is_recurring && request.schedules) {
+                console.log(request.schedules)
+                // Check if the schedule status matches the selected filter
+                request.filteredSchedules = request.schedules.filter(schedule => {
+                    
+                    // Check if the schedule matches the filter status or if it's withdrawn with the original req_id
+                    return schedule.status === filterStatus.value.toUpperCase()
+                });
+                // Show the request if it has matching schedules
+                return request.filteredSchedules.length > 0;
+            }
+            // For non-recurring requests, match the request status directly
+            return request.status === filterStatus.value.toUpperCase() || 
+                   (request.status === 'WITHDRAWN' && request.request_id === schedule.original_req_id);
+        });
     }
 });
+
 
 const fetchRequests = async () => {
     try {
@@ -234,23 +259,29 @@ const fetchRequests = async () => {
         const response = await axios.get(
             `${import.meta.env.VITE_API_URL}/api/staff-requests/${userData.staff_id}`
         );
-
-        // console.log('userData:', userData);
-        // console.log('response:', response);
-        console.log('all requests:', response.data);
-        // console.log(typeof (response.data));
-        // console.log('err');
-
-        allRequests.value = response.data.staff_requests;
-        // console.log('allRequests:', allRequests.value);
-
+        
+        // Process each request to include schedules
+        const requestsWithSchedules = await Promise.all(
+            response.data.staff_requests.map(async request => {
+                if (request.is_recurring) {
+                    const scheduleResponse = await axios.get(
+                        `${import.meta.env.VITE_API_URL}/api/schedules-by-ori-request-id/${request.request_id}`
+                    );
+                    request.schedules = scheduleResponse.data.schedules; // Add schedules to each request
+                }
+                return request;
+            })
+        );
+        
+        allRequests.value = requestsWithSchedules;
     } catch (error) {
         console.error('Error fetching requests:', error);
         alert('Error fetching requests');
     } finally {
         isLoaded.value = true;
     }
-}
+};
+
 // Cancel pending request
 const cancelRequest = (request_id) => {
     requestToCancel.value = request_id;

@@ -565,3 +565,39 @@ class WFHScheduleService:
             print(f"Error in updating schedule request id")
             
             
+    @staticmethod
+    def get_schedules_by_request_id(request_id):
+        # Query all fields from Schedule where request_id matches the given parameter
+        schedules = WFHSchedule.query.filter_by(request_id=request_id).all()
+
+        # Initialize an empty list outside the loop to accumulate all schedules
+        schedule_list = [
+            {
+                'schedule_id': schedule.schedule_id,
+                'date': schedule.date,
+                'duration': schedule.duration,
+                'status': schedule.status
+            }
+            for schedule in schedules
+        ]
+        return {'schedules': schedule_list}
+    
+    @staticmethod
+    def get_schedules_by_ori_req_id(request_id):
+        # Query all fields from Schedule where request_id matches the given parameter
+        schedules = WFHSchedule.query.filter_by(reason_for_withdrawing=int(request_id)).all()
+
+
+        # Initialize an empty list outside the loop to accumulate all schedules
+        schedule_list = [
+            {
+                'schedule_id': schedule.schedule_id,
+                'request_id': schedule.request_id,
+                'date': schedule.date,
+                'duration': schedule.duration,
+                'status': schedule.status,
+                'reason': schedule.reason_for_withdrawing,
+            }
+            for schedule in schedules
+        ]
+        return {'schedules': schedule_list}
