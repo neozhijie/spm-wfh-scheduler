@@ -1047,5 +1047,242 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
         for schedule in schedules:
             self.assertEqual(schedule.status, "CANCELLED")
 
+    def test_get_schedules_by_request_id_1(self):
+        date = datetime.now().date()
+
+        schedule = WFHSchedule(
+            request_id=1,
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            date=date,
+            duration='FULL_DAY',
+            status='APPROVED',
+            dept=self.staff3.dept,
+            position=self.staff3.position,
+        )
+        db.session.add(schedule)
+        db.session.commit()
+
+        result = WFHScheduleService.get_schedules_by_request_id(1)
+        staff_data = result['schedules'] 
+
+        self.assertEqual(len(staff_data), 1)
+
+        self.assertEqual(staff_data[0]['duration'], 'FULL_DAY')
+        self.assertEqual(staff_data[0]['status'], 'APPROVED')
+
+    def test_get_schedules_by_request_id_2(self):
+        date = datetime.now().date()
+        
+        # Create two schedules with the same request_id
+        schedule1 = WFHSchedule(
+            request_id=1,
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            date=date,
+            duration='FULL_DAY',
+            status='APPROVED',
+            dept=self.staff3.dept,
+            position=self.staff3.position,
+        )
+        
+        schedule2 = WFHSchedule(
+            request_id=1,
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            date=date + timedelta(days=1),
+            duration='HALF_DAY',
+            status='PENDING',
+            dept=self.staff3.dept,
+            position=self.staff3.position,
+        )
+
+        db.session.add(schedule1)
+        db.session.add(schedule2)
+        db.session.commit()
+
+        result = WFHScheduleService.get_schedules_by_request_id(1)
+        staff_data = result['schedules'] 
+
+        self.assertEqual(len(staff_data), 2)
+
+        self.assertEqual(staff_data[0]['duration'], 'FULL_DAY')
+        self.assertEqual(staff_data[0]['status'], 'APPROVED')
+        self.assertEqual(staff_data[1]['duration'], 'HALF_DAY')
+        self.assertEqual(staff_data[1]['status'], 'PENDING')
+
+    def test_get_schedules_by_invalid_request_id(self):
+        date = datetime.now().date()
+        
+        # Create two schedules with the same request_id
+        schedule1 = WFHSchedule(
+            request_id=1,
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            date=date,
+            duration='FULL_DAY',
+            status='APPROVED',
+            dept=self.staff3.dept,
+            position=self.staff3.position,
+        )
+
+        db.session.add(schedule1)
+        db.session.commit()
+
+        result = WFHScheduleService.get_schedules_by_request_id(2)
+        staff_data = result['schedules'] 
+
+        self.assertEqual(len(staff_data), 0)
+
+    def test_get_schedules_by_ori_req_id_single_schedule(self):
+        today = datetime.now().date()
+        
+        # Create a parent WFHRequest
+        parent_request = WFHRequest(
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            request_date=today,
+            start_date=today,
+            duration='FULL_DAY',
+            reason_for_applying="Working from home",
+        )
+        db.session.add(parent_request)
+        db.session.commit()
+        
+        # Create a schedule with reason_for_withdrawing matching the parent's request_id
+        schedule = WFHSchedule(
+            request_id=parent_request.request_id,
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            date=today,
+            duration='FULL_DAY',
+            status='WITHDRAWN',
+            dept=self.staff3.dept,      # Make sure dept is populated
+            position=self.staff3.position,  # Make sure position is populated
+            reason_for_withdrawing=parent_request.request_id,
+        )
+        db.session.add(schedule)
+        db.session.commit()
+        
+        # Fetch the result from the service
+        result = WFHScheduleService.get_schedules_by_ori_req_id(parent_request.request_id)
+        schedules = result['schedules']
+        
+        # Assertions
+        self.assertEqual(len(schedules), 1)
+        self.assertEqual(schedules[0]['duration'], 'FULL_DAY')
+        self.assertEqual(schedules[0]['status'], 'WITHDRAWN')
+        self.assertEqual(schedules[0]['request_id'], parent_request.request_id)
+        self.assertEqual(schedules[0]['manager_id'], parent_request.manager_id)
+
+
+    def test_get_schedules_by_ori_req_id_multiple_schedules_1(self):
+        today = datetime.now().date()
+
+        parent_request = WFHRequest(
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            request_date=today,
+            start_date=today,
+            duration='FULL_DAY',
+            reason_for_applying="Testing multiple schedules",
+        )
+        db.session.add(parent_request)
+        db.session.commit()
+ 
+        schedule1 = WFHSchedule(
+            request_id=parent_request.request_id,
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            date=today,
+            duration='FULL_DAY',
+            status='WITHDRAWN',
+            dept=self.staff3.dept,
+            position=self.staff3.position,
+            reason_for_withdrawing=parent_request.request_id,
+        )
+        schedule2 = WFHSchedule(
+            request_id=parent_request.request_id,
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            date=today + timedelta(days=1),
+            duration='HALF_DAY',
+            status='APPROVED',
+            dept=self.staff3.dept, 
+            position=self.staff3.position,  
+            reason_for_withdrawing='',
+        )
+        db.session.add_all([schedule1, schedule2])
+        db.session.commit()
+
+        result = WFHScheduleService.get_schedules_by_ori_req_id(parent_request.request_id)
+        schedules = result['schedules']
+
+        self.assertEqual(len(schedules), 1)
+        self.assertEqual(len(schedules), 1)
+        self.assertEqual(schedules[0]['duration'], 'FULL_DAY')
+        self.assertEqual(schedules[0]['status'], 'WITHDRAWN')
+
+    def test_get_schedules_by_ori_req_id_multiple_schedules_2(self):
+        today = datetime.now().date()
+
+        parent_request = WFHRequest(
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            request_date=today,
+            start_date=today,
+            duration='FULL_DAY',
+            reason_for_applying="Testing multiple schedules",
+        )
+        db.session.add(parent_request)
+        db.session.commit()
+ 
+        schedule1 = WFHSchedule(
+            request_id=parent_request.request_id,
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            date=today,
+            duration=parent_request.duration,
+            status='WITHDRAWN',
+            dept=self.staff3.dept,
+            position=self.staff3.position,
+            reason_for_withdrawing=parent_request.request_id,
+        )
+        schedule2 = WFHSchedule(
+            request_id=parent_request.request_id,
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            date=today + timedelta(days=1),
+            duration=parent_request.duration,
+            status='APPROVED',
+            dept=self.staff3.dept, 
+            position=self.staff3.position,  
+            reason_for_withdrawing=parent_request.request_id,
+        )
+        db.session.add_all([schedule1, schedule2])
+        db.session.commit()
+
+        result = WFHScheduleService.get_schedules_by_ori_req_id(parent_request.request_id)
+        schedules = result['schedules']
+
+        self.assertEqual(len(schedules), 2)
+        self.assertEqual(schedules[0]['duration'], 'FULL_DAY')
+        self.assertEqual(schedules[0]['status'], 'WITHDRAWN')
+        self.assertEqual(schedules[1]['status'], 'APPROVED')
+        self.assertEqual(schedules[0]['request_id'], 1)
+        self.assertEqual(schedules[0]['request_date'], today)
+        self.assertEqual(schedules[0]['start_date'], today)
+        self.assertEqual(schedules[1]['start_date'], today + timedelta(days=1))
+
+    def test_get_schedules_by_ori_req_id_no_schedules(self):
+        # Attempt to fetch schedules with a request_id that has no schedules
+        result = WFHScheduleService.get_schedules_by_ori_req_id(9999)  # assuming 9999 does not exist
+        schedules = result['schedules']
+        
+        # Assert that an empty list is returned
+        self.assertEqual(schedules, [])
+
+
+
 if __name__ == "__main__":
     unittest.main()

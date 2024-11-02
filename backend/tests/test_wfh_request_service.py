@@ -392,6 +392,99 @@ class WFHRequestServiceTestCase(unittest.TestCase):
         self.assertEqual(len(requests), 0)
         self.assertEqual(requests, [])
 
+    def test_check_withdrawal_1(self):
+        today = datetime.now().date()
+        start_date = today + timedelta(days=5)
+        end_date = None
+
+        # Create a WFH request
+        work_from_home_request = WFHRequest(
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            request_date=today,
+            start_date=start_date, 
+            end_date=end_date,
+            reason_for_applying="Need to work from home",
+            duration="FULL_DAY",
+        ) 
+
+        # Create a withdrawal request
+        withdrawal_request = WFHRequest(
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            request_date=today,
+            start_date=start_date, 
+            end_date=end_date,
+            reason_for_applying="Withdraw WFH",
+            duration="WITHDRAWAL_REQUEST",
+        )
+
+        db.session.add(work_from_home_request)
+        db.session.commit()
+        db.session.add(withdrawal_request)
+        db.session.commit()
+
+        result = WFHRequestService.check_withdrawal(self.staff3.staff_id, start_date)
+
+        self.assertEqual(result, True)
+
+    def test_check_withdrawal_2(self):
+        today = datetime.now().date()
+        start_date = today + timedelta(days=5)
+        end_date = None
+
+        # Create a WFH request
+        work_from_home_request = WFHRequest(
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            request_date=today,
+            start_date=start_date, 
+            end_date=end_date,
+            reason_for_applying="Need to work from home",
+            duration="FULL_DAY",
+        ) 
+
+        db.session.add(work_from_home_request)
+        db.session.commit()
+
+        result = WFHRequestService.check_withdrawal(self.staff3.staff_id, start_date)
+
+        self.assertEqual(result, False)
+
+    def test_check_withdrawal_3(self):
+        today = datetime.now().date()
+        start_date = today + timedelta(days=5)
+        end_date = None
+
+        work_from_home_request_1 = WFHRequest(
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            request_date=today,
+            start_date=start_date, 
+            end_date=end_date,
+            reason_for_applying="Need to work from home",
+            duration="FULL_DAY",
+        ) 
+
+        work_from_home_request_2 = WFHRequest(
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            request_date=today,
+            start_date=start_date + timedelta(days=1), 
+            end_date=end_date,
+            reason_for_applying="Need to work from home",
+            duration="FULL_DAY",
+        )
+
+        db.session.add(work_from_home_request_1)
+        db.session.commit()
+        db.session.add(work_from_home_request_2)
+        db.session.commit()
+
+        result = WFHRequestService.check_withdrawal(self.staff3.staff_id, start_date)
+
+        self.assertEqual(result, False)
+
 
 
 
