@@ -589,7 +589,6 @@ class WFHScheduleService:
             for schedule in schedules:
                 parent_request_id = schedule.reason_for_withdrawing
                 parent_request = WFHRequest.query.filter_by(request_id=parent_request_id).first()
-                print('parent_request: ', parent_request)
                 if parent_request:
                     request_details = {
                         'duration': parent_request.duration,

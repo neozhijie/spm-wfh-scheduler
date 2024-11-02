@@ -434,28 +434,55 @@ def create_cancel_request():
 @wfh_bp.route('/schedules-by-request-id/<request_id>', methods=['GET'])
 def get_schedules_by_request_id(request_id):
     try:
+        # Validate request_id format
+        if not request_id.isdigit():
+            return jsonify({"message": "Invalid request ID format"}), 400
+
         # Fetch schedule data from the service
-        data = WFHScheduleService.get_schedules_by_request_id(request_id)
+        data = WFHScheduleService.get_schedules_by_request_id(int(request_id))
+        
+        # Check if data exists
+        if not data:
+            return jsonify({"message": "Request not found"}), 404
+            
         print("Schedules fetched successfully")
         return jsonify(data), 200
+
+    except ValueError:
+        return jsonify({"message": "Invalid request ID format"}), 400
     except Exception as e:
         print(f"Error in get_schedules_by_request_id: {str(e)}")
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+
     
 @wfh_bp.route('/check-withdrawal/<request_id>', methods=['GET'])
 def check_withdrawal(request_id):
-    # Fetch the request from the database using the request_id
-    wfhrequest = WFHRequest.query.filter_by(request_id=request_id).first()
-    
-    if wfhrequest:
-        staff_id = wfhrequest.staff_id
-        schedule_date = request.args.get('schedule_date', wfhrequest.start_date)
-        withdrawal_exists = WFHRequestService.check_withdrawal(staff_id, schedule_date)
+    try:
+        # Get the WFH request
+        wfh_request = WFHRequest.query.filter_by(id=request_id).first()
+        if not wfh_request:
+            return jsonify({'message': 'Request not found'}), 404
+
+        # Get schedule_date from query parameters or use start_date as default
+        schedule_date = request.args.get('schedule_date', wfh_request.start_date)
         
-        return jsonify({'withdrawn': withdrawal_exists}), 200
-    else:
-        # Handle the case where the request is not found
-        return jsonify({'message': 'Request not found'}), 404
+        # Check withdrawal
+        try:
+            withdrawal_exists = WFHRequestService.check_withdrawal(
+                wfh_request.staff_id, 
+                schedule_date
+            )
+            return jsonify({
+                'withdrawn': withdrawal_exists  # Changed from 'exists' to 'withdrawn'
+            }), 200
+            
+        except ValueError as ve:
+            # Handle invalid date format
+            return jsonify({'message': str(ve)}), 400
+            
+    except Exception as e:
+        # Handle general server errors
+        return jsonify({'message': f'An error occurred: {str(e)}'}), 500
     
 @wfh_bp.route('/schedules-by-ori-request-id/<request_id>', methods=['GET'])
 def get_schedules_by_ori_request_id(request_id):
