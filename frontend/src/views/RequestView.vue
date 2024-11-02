@@ -34,9 +34,10 @@
                       <span v-else="request.is_recurring" class="badge bg-primary ms-1"
                         >Ad-hoc</span
                       >
-                      <span v-if="request.duration === 'FULL_DAY'" class="badge bg-success ms-1">FULL DAY</span>
-          <span v-else-if="request.duration === 'HALF_DAY_AM'" class="badge bg-warning text-dark ms-1">AM</span>
-          <span v-else-if="request.duration === 'HALF_DAY_PM'" class="badge bg-warning text-dark ms-1">PM</span>
+                      <span v-if="request.duration === 'FULL_DAY'" class="badge bg-success ms-1">Full Day</span>
+                        <span v-else-if="request.duration === 'HALF_DAY_AM'" class="badge bg-warning text-dark ms-1">AM</span>
+                        <span v-else-if="request.duration === 'HALF_DAY_PM'" class="badge bg-warning text-dark ms-1">PM</span>
+                        <span v-if="request.duration === 'WITHDRAWAL REQUEST'" class="badge bg-danger ms-1">Withdrawal</span>
                     </td>
                     <td>
                       <span><button class="btn-approve" @click="approveRequest(request)" >Approve</button></span>

@@ -42,11 +42,19 @@
                                         <td>{{ formatDate(request.request_date) }}</td>
                                         <td>{{ formatDate(request.start_date) }}</td>
                                         <td>{{ request.end_date ? formatDate(request.end_date) : '-' }}</td>
-                                        <td>{{ request.reason_for_applying }}</td>
+                                        <td>
+                                            <span v-if="request.duration === 'WITHDRAWAL REQUEST' && request.status === 'REJECTED'">
+                                                {{ request.reason_for_rejection }}
+                                            </span>
+                                            <span v-else>
+                                                {{ request.reason_for_applying }}
+                                            </span>
+                                        </td>
                                         <td>
                                             <span v-if="request.is_recurring" class="badge bg-info ms-1">Recurring</span>
                                             <span v-else class="badge bg-primary ms-1">Ad-hoc</span>
-                                            <span v-if="request.duration === 'FULL_DAY'" class="badge bg-success ms-1">FULL DAY</span>
+                                            <span v-if="request.duration === 'WITHDRAWAL REQUEST'" class="badge bg-danger ms-1">Withdrawal</span>
+                                            <span v-if="request.duration === 'FULL_DAY'" class="badge bg-success ms-1">Full Day</span>
                                             <span v-else-if="request.duration === 'HALF_DAY_AM'" class="badge bg-warning text-dark ms-1">AM</span>
                                             <span v-else-if="request.duration === 'HALF_DAY_PM'" class="badge bg-warning text-dark ms-1">PM</span>
                                         </td>

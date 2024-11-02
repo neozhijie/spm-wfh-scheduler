@@ -119,6 +119,7 @@ def send_telegram_message(message):
                 time.sleep(sleep_time)
     
     print("Failed to send message after 5 attempts")
+    raise (Exception("Failed to send message after 5 attempts"))
 
 def format_summary(summary):
     formatted_summary = ""
@@ -131,30 +132,45 @@ def format_summary(summary):
     return formatted_summary.strip()
 
 def main():
-    if len(sys.argv) < 3:
-        print("Error: Please provide the path to the error log file as an argument.")
-        sys.exit(1)
-
-    error_log_file = sys.argv[1]
-    author = sys.argv[2]
-    github_actions_url = sys.argv[3]
-
-    # Read the error logs
     try:
-        with open(error_log_file, 'r') as f:
-            error_logs = f.read()
-    except IOError as e:
-        print(f"Error reading error log file: {e}")
-        sys.exit(1)
+        if len(sys.argv) < 3:
+            print("Error: Please provide the path to the error log file as an argument.")
+            sys.exit(1)
 
-    # Summarize the error logs using Groq API
-    summary = format_summary(summarize_logs(error_logs))
+        error_log_file = sys.argv[1]
+        author = sys.argv[2]
+        github_actions_url = sys.argv[3]
 
-    # Format the message
-    message = format_message(author, summary, github_actions_url)
+        # Read the error logs
+        try:
+            with open(error_log_file, 'r') as f:
+                error_logs = f.read()
+        except IOError as e:
+            print(f"Error reading error log file: {e}")
+            sys.exit(1)
 
-    # Send the message via Telegram
-    send_telegram_message(message)
+        # Summarize the error logs using Groq API
+        summary = format_summary(summarize_logs(error_logs))
+
+        # Format the message
+        message = format_message(author, summary, github_actions_url)
+
+        # Send the message via Telegram
+        send_telegram_message(message)
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        generic_message = f"""⚠️ *BUILD FAILED* ⚠️
+
+*Author:* {author}
+
+Integration error occurred. Please check the build logs for more details.
+
+[View GitHub Actions Log]({github_actions_url})
+
+Please check the build logs for more details."""
+        
+        send_telegram_message(generic_message)
 
 if __name__ == "__main__":
     main()

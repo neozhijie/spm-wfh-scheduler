@@ -165,7 +165,7 @@ describe('RequestView.vue', () => {
     // Check duration badge
     const durationBadge = wrapper.find('.badge.bg-success');
     expect(durationBadge.exists()).toBe(true);
-    expect(durationBadge.text()).toBe('FULL DAY');
+    expect(durationBadge.text()).toBe('Full Day');
   });
 
   it('handles API errors gracefully', async () => {

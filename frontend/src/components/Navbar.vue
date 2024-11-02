@@ -28,7 +28,7 @@
           <li class="nav-item" v-if="user.role==2">
             <router-link class="nav-link" to="/teamschedule-staff">Team Schedule</router-link>
           </li>
-          <li class="nav-item" v-if="user.role==1 && user.dept=='HR'">
+          <li class="nav-item" v-if="user.role==1 && (user.dept=='HR'|| user.dept=='CEO')">
             <router-link class="nav-link" to="/overallschedule">Overall Schedule</router-link>
           </li>
 
