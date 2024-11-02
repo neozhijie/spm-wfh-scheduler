@@ -2,11 +2,6 @@
   <div id="app">
     <Navbar />
     <div class="dashboard-container">
-      <!-- <div class="top-section">
-        <h1>Welcome to your Schedule Dashboard</h1>
-        <p>You are logged in as {{ user.staff_fname }} {{ user.staff_lname }}</p>
-      </div> -->
-
       <div class="main-section">
         <div class="calendar-container">
           <FullCalendar 
