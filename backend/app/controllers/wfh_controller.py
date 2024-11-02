@@ -170,9 +170,16 @@ def update_wfh_request():
         response = WFHRequestService.update_request(
             request_id, new_request_status, two_months_ago, reason)
         if response == True:
-            if new_request_status == 'APPROVED' and request_obj.duration == "WITHDRAWAL REQUEST":
-                new_request_status = "WITHDRAWN"
-            response2 = WFHScheduleService.update_schedule(request_id, new_request_status)
+            if response == True:
+                schedule = WFHSchedule.query.filter_by(request_id=request_id).first()
+                if new_request_status == 'APPROVED' and request_obj.duration == "WITHDRAWAL REQUEST":
+                    new_request_status = "WITHDRAWN"
+                    original_request = WFHRequest.query.filter_by(request_id=int(schedule.reason_for_withdrawing)).first()
+                    if original_request.end_date is None:
+                        original_request.status = "WITHDRAWN"
+                response2 = WFHScheduleService.update_schedule(request_id, new_request_status)
+            if new_request_status == 'REJECTED' and request_obj.duration == "WITHDRAWAL REQUEST":
+                WFHScheduleService.orig_schedule_request_id(schedule.schedule_id)
 
             if response2 == True:
                 print("Successfully updated")
