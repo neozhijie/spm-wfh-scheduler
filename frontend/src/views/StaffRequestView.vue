@@ -54,7 +54,7 @@
                                             <span :class="getRequestStatus(request.status)">{{ request.status }}</span>
                                         </td>
                                         <td>
-                                            <button v-if="request.status === 'PENDING' && request.duration!=='CANCEL REQUEST'" class="btn btn-danger btn-sm"
+                                            <button v-if="request.status === 'PENDING' && request.duration!=='WITHDRAWAL REQUEST'" class="btn btn-danger btn-sm"
                                                 @click.stop="cancelRequest(request.request_id)">
                                                 Cancel
                                             </button>
@@ -220,60 +220,48 @@ const filteredRequests = computed(() => {
     if (filterStatus.value === 'All') {
         return allRequests.value;
     } else if (filterStatus.value === 'Others') {
-        return allRequests.value.filter(request => {
-            if (request.is_recurring && request.schedules) {
-                // Filter schedules to include only those that belong to "Others" statuses
-                request.filteredSchedules = request.schedules.filter(schedule =>
-                    ['EXPIRED', 'CANCELLED', 'WITHDRAWN'].includes(schedule.status)
-                );
-                // Show the request in "Others" only if there are matching schedules
-                return request.filteredSchedules.length > 0;
-            }
-            // For non-recurring requests, check if the main request status belongs to "Others"
-            return ['EXPIRED', 'CANCELLED', 'WITHDRAWN'].includes(request.status);
-        });
+        return allRequests.value.filter(request =>
+            ['EXPIRED', 'CANCELLED', 'WITHDRAWN'].includes(request.status)
+        );
     } else {
-        return allRequests.value.filter(request => {
-            if (request.is_recurring && request.schedules) {
-                console.log(request.schedules)
-                // Check if the schedule status matches the selected filter
-                request.filteredSchedules = request.schedules.filter(schedule => {
-                    
-                    // Check if the schedule matches the filter status or if it's withdrawn with the original req_id
-                    return schedule.status === filterStatus.value.toUpperCase()
-                });
-                // Show the request if it has matching schedules
-                return request.filteredSchedules.length > 0;
-            }
-            // For non-recurring requests, match the request status directly
-            return request.status === filterStatus.value.toUpperCase() || 
-                   (request.status === 'WITHDRAWN' && request.request_id === schedule.original_req_id);
-        });
+        return allRequests.value.filter(request => request.status === filterStatus.value.toUpperCase());
     }
 });
-
-
 const fetchRequests = async () => {
     try {
         const userData = JSON.parse(localStorage.getItem('user'));
         const response = await axios.get(
             `${import.meta.env.VITE_API_URL}/api/staff-requests/${userData.staff_id}`
         );
-        
-        // Process each request to include schedules
-        const requestsWithSchedules = await Promise.all(
-            response.data.staff_requests.map(async request => {
-                if (request.is_recurring) {
-                    const scheduleResponse = await axios.get(
-                        `${import.meta.env.VITE_API_URL}/api/schedules-by-ori-request-id/${request.request_id}`
-                    );
-                    request.schedules = scheduleResponse.data.schedules; // Add schedules to each request
+
+        const requests = response.data.staff_requests; // Get the requests
+        const allRequestsArray = []; // Create an array to hold the combined requests and schedules
+
+        // Loop through each request
+        for (const request of requests) {
+            // Format and add the request to the combined array
+            allRequestsArray.push(request);
+
+            // Fetch schedules for recurring requests
+            if (request.is_recurring) {
+                const scheduleResponse = await axios.get(
+                    `${import.meta.env.VITE_API_URL}/api/schedules-by-ori-request-id/${request.request_id}`
+                );
+                console.log(scheduleResponse.data.schedules)
+                if(scheduleResponse.data && scheduleResponse.data.schedules){
+                    scheduleResponse.data.schedules.forEach(schedule => {
+                    allRequestsArray.push(schedule);
+                    });
                 }
-                return request;
-            })
-        );
-        
-        allRequests.value = requestsWithSchedules;
+                }
+                // Loop through the schedules and add them to the combined array
+
+        }
+
+        // Assign the combined requests and schedules to allRequests
+        allRequests.value = allRequestsArray;
+        console.log(allRequests.value)
+
     } catch (error) {
         console.error('Error fetching requests:', error);
         alert('Error fetching requests');

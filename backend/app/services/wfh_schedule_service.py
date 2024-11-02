@@ -567,10 +567,8 @@ class WFHScheduleService:
             
     @staticmethod
     def get_schedules_by_request_id(request_id):
-        # Query all fields from Schedule where request_id matches the given parameter
         schedules = WFHSchedule.query.filter_by(request_id=request_id).all()
 
-        # Initialize an empty list outside the loop to accumulate all schedules
         schedule_list = [
             {
                 'schedule_id': schedule.schedule_id,
@@ -584,20 +582,29 @@ class WFHScheduleService:
     
     @staticmethod
     def get_schedules_by_ori_req_id(request_id):
-        # Query all fields from Schedule where request_id matches the given parameter
+        all_request_details = []
         schedules = WFHSchedule.query.filter_by(reason_for_withdrawing=int(request_id)).all()
 
+        if schedules:
+            for schedule in schedules:
+                parent_request_id = schedule.reason_for_withdrawing
+                parent_request = WFHRequest.query.filter_by(request_id=parent_request_id).first()
+                print('parent_request: ', parent_request)
+                if parent_request:
+                    request_details = {
+                        'duration': parent_request.duration,
+                        'end_date': None,
+                        'manager_id': parent_request.manager_id,
+                        'reason_for_applying': parent_request.reason_for_applying,
+                        'reason_for_rejection': parent_request.reason_for_rejection,
+                        'request_date': parent_request.request_date,
+                        'request_id': parent_request.request_id,
+                        'staff_id': parent_request.staff_id,
+                        'start_date': schedule.date,
+                        'status': schedule.status
+                    }
+                    all_request_details.append(request_details)
 
-        # Initialize an empty list outside the loop to accumulate all schedules
-        schedule_list = [
-            {
-                'schedule_id': schedule.schedule_id,
-                'request_id': schedule.request_id,
-                'date': schedule.date,
-                'duration': schedule.duration,
-                'status': schedule.status,
-                'reason': schedule.reason_for_withdrawing,
-            }
-            for schedule in schedules
-        ]
-        return {'schedules': schedule_list}
+        return {
+            'schedules': all_request_details
+        }
