@@ -21,7 +21,7 @@
                     <div v-if="isLoading" class="loading-overlay">
                         <div class="spinner"></div>
                     </div>
-                    <div v-if="isLoaded" class="card-body shadow">
+                    <div v-if="!isLoading" class="card-body shadow">
                         <div v-if="filteredRequests.length > 0" class="table">
                             <table class="table table-hover">
                                 <thead class="thead-light">
@@ -220,7 +220,7 @@ const expandedRequestId = ref(null);
 const scheduleIds = ref([]);
 const selectedRequest = ref([]);
 const errorMessage = ref('');
-const isLoading = ref(false);
+const isLoading = ref(true);
 
 
 // error here
@@ -840,13 +840,16 @@ button:hover {
 
   /* Loading Overlay Styles */
   .loading-overlay {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   background: rgba(255, 255, 255, 0.8);
-  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
 }
 
 .spinner {
