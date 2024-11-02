@@ -40,17 +40,31 @@ def clean_and_format_summary(summary):
     
     return summary.strip()
 
+def truncate_text(text, max_chars=16000):  # approximately 4000 tokens
+    """Truncate text to stay within token limits, keeping the most recent logs."""
+    if len(text) <= max_chars:
+        return text
+    
+    # Keep the first 1000 characters (usually containing important setup info)
+    prefix = text[:1000]
+    # Keep the last part of the logs (most recent errors)
+    suffix = text[-(max_chars-1000):]
+    
+    return f"{prefix}\n...[TRUNCATED]...\n{suffix}"
 
 def summarize_logs(error_logs):
     client = Groq(
         api_key=os.environ.get("GROQ_API_KEY"),
     )
     try:
+        # Truncate logs before sending to API
+        truncated_logs = truncate_text(error_logs)
+        
         chat_completion = client.chat.completions.create(
             messages=[
                 {
                     "role": "user",
-                    "content": f"Summarize the following error logs in a concise manner, giving them in bullet points. Do not include any introductory text or formatting instructions. Focus on linting, as well as unittest errors. Include other errors if available. Start directly with the bullet points:\n\n{error_logs}",
+                    "content": f"Summarize the following error logs in a concise manner in less than 3000 words in total, giving them in bullet points. Do not include any introductory text or formatting instructions. Focus on linting, as well as unittest errors. Include other errors if available. Start directly with the bullet points:\n\n{truncated_logs}",
                 }
             ],
             model="llama3-8b-8192",

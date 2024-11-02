@@ -1,4 +1,3 @@
-// src/tests/LoginView.spec.js
 import { mount } from '@vue/test-utils';
 import { createRouter, createWebHistory } from 'vue-router';
 import LoginView from '../views/LoginView.vue';
