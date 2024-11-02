@@ -88,7 +88,7 @@
                         @click="toggleTeam('AM', managerName)"
                       >
                         <div class="team-header">
-                          <h3>{{ managerName }}'s Team</h3>
+                          <h3>{{ managerName }}</h3>
                           <div class="badge-container">
                             <span class="badge badge-office">
                               In Office: {{ managerTeam.inOffice }}/{{ managerTeam.total }}
@@ -178,7 +178,7 @@
                         @click="toggleTeam('PM', managerName)"
                       >
                         <div class="team-header">
-                          <h3>{{ managerName }}'s Team</h3>
+                          <h3>{{ managerName }}</h3>
                           <div class="badge-container">
                             <span class="badge badge-office">
                               In Office: {{ managerTeam.inOffice }}/{{ managerTeam.total }}
