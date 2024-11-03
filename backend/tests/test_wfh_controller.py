@@ -1367,41 +1367,38 @@ class WFHControllerTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
         self.assertEqual(data, mock_data)
-
-    # # Test for valid request ID without schedules
-    # @patch('app.services.wfh_schedule_service.WFHScheduleService.get_schedules_by_ori_req_id')
-    # def test_get_schedules_by_ori_request_id_no_schedules(self, mock_get_schedules):
-    #     request_id = 2
-    #     mock_get_schedules.return_value = {"schedules": []}  # No schedules
-
-    #     response = self.client.get(f'/api/schedules-by-ori-request-id/{request_id}')
+    # Test for valid request ID without schedules
+    @patch('app.services.wfh_schedule_service.WFHScheduleService.get_schedules_by_ori_req_id')
+    def test_get_schedules_by_ori_request_id_no_schedules(self, mock_get_schedules):
+        request_id = 2
+        mock_get_schedules.return_value = {"schedules": []}  # No schedules
+        response = self.client.get(f'/api/schedules-by-ori-request-id/{request_id}')
         
-    #     self.assertEqual(response.status_code, 404)
-
-
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(data, {"schedules": []})
     # Test for invalid request ID (no records found)
-    # @patch('app.services.wfh_schedule_service.WFHScheduleService.get_schedules_by_ori_req_id')
-    # def test_get_schedules_by_ori_request_id_invalid_id(self, mock_get_schedules):
-    #     request_id = 9999  # Assuming this ID doesn't exist
-    #     mock_get_schedules.return_value = {"schedules": []}
-
-    #     response = self.client.get(f'/api/schedules-by-ori-request-id/{request_id}')
+    @patch('app.services.wfh_schedule_service.WFHScheduleService.get_schedules_by_ori_req_id')
+    def test_get_schedules_by_ori_request_id_invalid_id(self, mock_get_schedules):
+        request_id = 9999  # Assuming this ID doesn't exist
+        mock_get_schedules.return_value = {"schedules": []}
+        response = self.client.get(f'/api/schedules-by-ori-request-id/{request_id}')
         
-    #     self.assertEqual(response.status_code, 404)
-
-
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(data, {"schedules": []})
     # Test for server error
     @patch('app.services.wfh_schedule_service.WFHScheduleService.get_schedules_by_ori_req_id')
     def test_get_schedules_by_ori_request_id_server_error(self, mock_get_schedules):
         request_id = 1
         mock_get_schedules.side_effect = Exception("Database error")
-
         response = self.client.get(f'/api/schedules-by-ori-request-id/{request_id}')
         
         self.assertEqual(response.status_code, 500)
         data = response.get_json()
         self.assertIn('message', data)
         self.assertTrue("An error occurred: Database error" in data['message'])
+
 
 
 
