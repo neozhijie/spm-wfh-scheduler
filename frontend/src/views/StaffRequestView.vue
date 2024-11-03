@@ -67,7 +67,7 @@
                                                 Cancel
                                             </button>
                                             <button
-                                                v-if="request.status === 'APPROVED' && !request.is_recurring"
+                                                v-if="request.status === 'APPROVED' && !request.is_recurring && request.duration !== 'WITHDRAWAL REQUEST'"
                                                 :class="{
                                                     'btn btn-warning btn-sm': isWithinWithdrawalPeriod(request.start_date) && request.withdrawn === false,
                                                     'btn btn-secondary btn-sm': !isWithinWithdrawalPeriod(request.start_date) || request.withdrawn === true
