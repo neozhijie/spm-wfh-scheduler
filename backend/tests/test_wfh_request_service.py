@@ -377,6 +377,7 @@ class WFHRequestServiceTestCase(unittest.TestCase):
             end_date=end_date,
             reason_for_applying="Need to work from home",
             duration="FULL_DAY",
+            status="APPROVED"
         ) 
 
         # Create a withdrawal request
@@ -388,6 +389,7 @@ class WFHRequestServiceTestCase(unittest.TestCase):
             end_date=end_date,
             reason_for_applying="Withdraw WFH",
             duration="WITHDRAWAL_REQUEST",
+            status="PENDING"
         )
 
         db.session.add(work_from_home_request)
@@ -413,6 +415,8 @@ class WFHRequestServiceTestCase(unittest.TestCase):
             end_date=end_date,
             reason_for_applying="Need to work from home",
             duration="FULL_DAY",
+            status="APPROVED"
+
         ) 
 
         db.session.add(work_from_home_request)
@@ -435,6 +439,7 @@ class WFHRequestServiceTestCase(unittest.TestCase):
             end_date=end_date,
             reason_for_applying="Need to work from home",
             duration="FULL_DAY",
+            status="APPROVED"
         ) 
 
         work_from_home_request_2 = WFHRequest(
@@ -445,6 +450,7 @@ class WFHRequestServiceTestCase(unittest.TestCase):
             end_date=end_date,
             reason_for_applying="Need to work from home",
             duration="FULL_DAY",
+            status="APPROVED"
         )
 
         db.session.add(work_from_home_request_1)

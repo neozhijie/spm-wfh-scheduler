@@ -567,18 +567,30 @@ class WFHScheduleService:
             
     @staticmethod
     def get_schedules_by_request_id(request_id):
-        schedules = WFHSchedule.query.filter_by(request_id=request_id).all()
+        request_id_str = str(request_id)
+        
+        # Query schedules where:
+        # - `reason` matches the `request_id` if `reason` is not None
+        # - OR `request_id` itself matches when `reason` is None
+        schedules = WFHSchedule.query.filter(
+            (WFHSchedule.reason_for_withdrawing == request_id_str) | 
+            ((WFHSchedule.request_id == request_id) & (WFHSchedule.reason_for_withdrawing.is_(None)))
+        ).all()
 
         schedule_list = [
             {
                 'schedule_id': schedule.schedule_id,
                 'date': schedule.date,
                 'duration': schedule.duration,
-                'status': schedule.status
+                'status': schedule.status,
+                'matched_by': 'reason' if schedule.reason_for_withdrawing == request_id_str else 'request_id'
             }
             for schedule in schedules
         ]
+
+        print({'schedules': schedule_list})  # Debug print to confirm data structure
         return {'schedules': schedule_list}
+
     
     @staticmethod
     def get_schedules_by_ori_req_id(request_id):

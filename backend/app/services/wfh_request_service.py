@@ -139,8 +139,10 @@ class WFHRequestService:
 
     @staticmethod
     def check_withdrawal(staff_id, start_date):
-        withdrawal_request_count = WFHRequest.query.filter_by(
-            staff_id=staff_id, start_date=start_date
-        ).count()
-        
-        return withdrawal_request_count > 1 
+        withdrawal_request_exists = WFHRequest.query.filter_by(
+            staff_id=staff_id,
+            start_date=start_date,
+            status='PENDING'
+        ).count() > 0 
+
+        return withdrawal_request_exists

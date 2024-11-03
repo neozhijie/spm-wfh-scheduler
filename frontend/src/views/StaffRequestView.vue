@@ -96,7 +96,7 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr v-for="(schedule, index) in request.schedules" :key="index">
+                                                <tr v-for="(schedule, index) in request.schedules.filter(schedule => schedule.status !== 'WITHDRAWN')" :key="index">
                                                     <td>{{ schedule.schedule_id }}</td>
                                                     <td>{{ formatDate(schedule.date) }}</td>
                                                     <td>
@@ -121,7 +121,8 @@
                                                             Withdraw
                                                         </button>
                                                     </td>
-                                                </tr>
+                                                <!-- </td> -->
+                                            </tr>
                                             </tbody>
                                      </table>
                                 </div>
@@ -258,7 +259,10 @@ const fetchRequests = async () => {
                 console.log(scheduleResponse.data.schedules)
                 if(scheduleResponse.data && scheduleResponse.data.schedules){
                     scheduleResponse.data.schedules.forEach(schedule => {
-                    allRequestsArray.push(schedule);
+                        if (schedule.status == 'WITHDRAWN'){
+                            allRequestsArray.push(schedule);
+                        }
+                    
                     });
                 }
                 }
@@ -373,7 +377,7 @@ const checkAllWithdrawalStatuses = async () => {
                     for (const schedule of schedules) {
                         const formattedDate = formatScheduleDate(schedule.date);
                         schedule.withdrawn = await checkWithdrawalStatus(request.request_id, formattedDate);
-                        schedule.status = request.status;
+                        schedule.status = schedule.status;
                     }
                     request.schedules = schedules;
                 } else {

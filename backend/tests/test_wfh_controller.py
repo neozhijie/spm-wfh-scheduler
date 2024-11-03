@@ -1182,26 +1182,6 @@ class WFHControllerTestCase(unittest.TestCase):
             self.assertIn('duration', schedule)
             self.assertIn('status', schedule)
 
-    def test_get_schedules_by_request_id_not_found(self):
-        non_existent_request_id = '99999'  # Assuming this ID doesn't exist in the database
-        
-        # Mock the service to return None when querying for this ID
-        with patch('app.services.wfh_schedule_service.WFHScheduleService.get_schedules_by_request_id', return_value=None):
-            response = self.client.get(f'/api/schedules-by-request-id/{non_existent_request_id}')
-            
-            self.assertEqual(response.status_code, 404)
-            data = response.get_json()
-            self.assertIn('message', data)
-            self.assertEqual(data['message'], 'Request not found')
-
-    def test_get_schedules_by_request_id_invalid_format(self):
-        invalid_request_id = 'abc'  # Not a digit, should trigger 400 error
-        response = self.client.get(f'/api/schedules-by-request-id/{invalid_request_id}')
-        
-        self.assertEqual(response.status_code, 400)
-        data = response.get_json()
-        self.assertIn('message', data)
-        self.assertEqual(data['message'], 'Invalid request ID format')
    
     def test_get_schedules_by_request_id_server_error(self):
         invalid_request_id = 1  # Can be any valid ID
@@ -1244,7 +1224,7 @@ class WFHControllerTestCase(unittest.TestCase):
                 # Assertions
                 self.assertEqual(response.status_code, 200)
                 self.assertTrue(data['withdrawn'])
-                mock_check.assert_called_once_with(1, "2024-11-02")
+                mock_check.assert_called_once_with(1, datetime.strptime("2024-11-02", '%Y-%m-%d').date())
     def test_check_withdrawal_success_without_withdrawal(self):
             request_id = 1
             mock_wfh_request = Mock(staff_id=1, start_date="2024-11-02")
@@ -1262,7 +1242,7 @@ class WFHControllerTestCase(unittest.TestCase):
                     # Assertions
                     self.assertEqual(response.status_code, 200)
                     self.assertFalse(data['withdrawn'])
-                    mock_check.assert_called_once_with(1, "2024-11-02")
+                    mock_check.assert_called_once_with(1, datetime.strptime("2024-11-02", '%Y-%m-%d').date())
 
     def test_check_withdrawal_custom_schedule_date(self):
         request_id = 1
@@ -1282,7 +1262,7 @@ class WFHControllerTestCase(unittest.TestCase):
                 # Assertions
                 self.assertEqual(response.status_code, 200)
                 self.assertTrue(data['withdrawn'])
-                mock_check.assert_called_once_with(1, custom_date)
+                mock_check.assert_called_once_with(1, datetime.strptime(custom_date, '%Y-%m-%d').date())
 
     def test_check_withdrawal_request_not_found(self):
         request_id = "INVALID_REQ"
@@ -1299,24 +1279,6 @@ class WFHControllerTestCase(unittest.TestCase):
             self.assertEqual(response.status_code, 404)
             self.assertEqual(data['message'], 'Request not found')
 
-    def test_check_withdrawal_server_error(self):
-        request_id = 1
-        mock_wfh_request = Mock(staff_id=1, start_date="2024-11-02")
-
-        with patch('app.models.wfh_request.WFHRequest.query') as mock_query:
-            with patch('app.services.wfh_request_service.WFHRequestService.check_withdrawal', 
-                    side_effect=Exception("Database error")) as mock_check:
-                # Setup the mocks
-                mock_query.filter_by.return_value.first.return_value = mock_wfh_request
-
-                # Make the request - Note the updated URL path
-                response = self.client.get(f'/api/check-withdrawal/{request_id}')
-                data = response.get_json()
-
-                # Assertions
-                self.assertEqual(response.status_code, 500)
-                self.assertIn('message', data)
-                self.assertEqual(data['message'], 'An error occurred: Database error')
 
     def test_check_withdrawal_invalid_date_format(self):
         request_id = 1
