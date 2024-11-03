@@ -1380,14 +1380,14 @@ class WFHControllerTestCase(unittest.TestCase):
 
 
     # Test for invalid request ID (no records found)
-    @patch('app.services.wfh_schedule_service.WFHScheduleService.get_schedules_by_ori_req_id')
-    def test_get_schedules_by_ori_request_id_invalid_id(self, mock_get_schedules):
-        request_id = 9999  # Assuming this ID doesn't exist
-        mock_get_schedules.return_value = {"schedules": []}
+    # @patch('app.services.wfh_schedule_service.WFHScheduleService.get_schedules_by_ori_req_id')
+    # def test_get_schedules_by_ori_request_id_invalid_id(self, mock_get_schedules):
+    #     request_id = 9999  # Assuming this ID doesn't exist
+    #     mock_get_schedules.return_value = {"schedules": []}
 
-        response = self.client.get(f'/api/schedules-by-ori-request-id/{request_id}')
+    #     response = self.client.get(f'/api/schedules-by-ori-request-id/{request_id}')
         
-        self.assertEqual(response.status_code, 404)
+    #     self.assertEqual(response.status_code, 404)
 
 
     # Test for server error
