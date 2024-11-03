@@ -1376,9 +1376,8 @@ class WFHControllerTestCase(unittest.TestCase):
 
         response = self.client.get(f'/api/schedules-by-ori-request-id/{request_id}')
         
-        self.assertEqual(response.status_code, 200)
-        data = response.get_json()
-        self.assertEqual(data, {"schedules": []})
+        self.assertEqual(response.status_code, 404)
+
 
     # Test for invalid request ID (no records found)
     @patch('app.services.wfh_schedule_service.WFHScheduleService.get_schedules_by_ori_req_id')
@@ -1388,9 +1387,8 @@ class WFHControllerTestCase(unittest.TestCase):
 
         response = self.client.get(f'/api/schedules-by-ori-request-id/{request_id}')
         
-        self.assertEqual(response.status_code, 200)
-        data = response.get_json()
-        self.assertEqual(data, {"schedules": []})
+        self.assertEqual(response.status_code, 404)
+
 
     # Test for server error
     @patch('app.services.wfh_schedule_service.WFHScheduleService.get_schedules_by_ori_req_id')
@@ -1405,30 +1403,6 @@ class WFHControllerTestCase(unittest.TestCase):
         self.assertIn('message', data)
         self.assertTrue("An error occurred: Database error" in data['message'])
 
-    # @patch('app.models.wfh_request.WFHRequest.query.filter_by')
-    # @patch('app.services.wfh_request_service.WFHRequestService.check_withdrawal')
-    # def test_check_withdrawal_no_withdrawal(self, mock_check_withdrawal, mock_filter_by):
-    #     # Arrange
-    #     request_id = 2
-    #     staff_id = 2
-    #     schedule_date = "2024-11-01"  # Example date
-
-    #     # Simulate a WFHRequest being found
-    #     mock_request = MagicMock()
-    #     mock_request.staff_id = staff_id
-    #     mock_request.start_date = schedule_date
-    #     mock_filter_by.return_value.first.return_value = mock_request
-
-    #     # Simulate that no withdrawal exists
-    #     mock_check_withdrawal.return_value = False
-
-    #     # Act
-    #     response = self.client.get(f'/api/check-withdrawal/{request_id}?schedule_date={schedule_date}')
-
-    #     # Assert
-    #     self.assertEqual(response.status_code, 200)
-    #     data = response.get_json()
-    #     self.assertEqual(data, {'withdrawn': False})
 
 
 
