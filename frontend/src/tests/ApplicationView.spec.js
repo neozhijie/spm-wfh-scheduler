@@ -41,7 +41,7 @@ describe('ApplicationView.vue', () => {
   })
 
   it('renders the form with all required elements', () => {
-    expect(wrapper.find('h2').text()).toBe('Work From Home Request Form')
+    expect(wrapper.find('h5').text()).toBe('Work From Home Request Form')
     expect(wrapper.find('#startDate').exists()).toBe(true)
     expect(wrapper.find('#reason').exists()).toBe(true)
     expect(wrapper.findAll('input[type="radio"]')).toHaveLength(3)

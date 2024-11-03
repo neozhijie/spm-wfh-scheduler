@@ -4,10 +4,10 @@
     <div class="background-container">
       <div class="container py-5">
         <div class="row justify-content-center">
-          <div class="col-md-8">
+          <div class="col-md-5">
             <div class="card custom-card">
               <div class="card-header">
-                <h2 class="mb-0">Work From Home Request Form</h2>
+                <h5 class="mb-0">Work From Home Request Form</h5>
               </div>
               <div class="card-body">
                 <form @submit.prevent="submitForm">

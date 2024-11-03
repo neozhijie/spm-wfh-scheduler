@@ -1047,7 +1047,7 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
         for schedule in schedules:
             self.assertEqual(schedule.status, "CANCELLED")
 
-    def test_get_schedules_by_request_id_1(self):
+    def test_get_schedules_by_request(self):
         date = datetime.now().date()
 
         schedule = WFHSchedule(
@@ -1071,7 +1071,7 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
         self.assertEqual(staff_data[0]['duration'], 'FULL_DAY')
         self.assertEqual(staff_data[0]['status'], 'APPROVED')
 
-    def test_get_schedules_by_request_id_2(self):
+    def test_get_multiple_schedules_by_request_id_2(self):
         date = datetime.now().date()
         
         # Create two schedules with the same request_id
@@ -1133,6 +1133,12 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
         staff_data = result['schedules'] 
 
         self.assertEqual(len(staff_data), 0)
+
+    def test_get_no_schedules_by_request_id(self):
+        result = WFHScheduleService.get_schedules_by_request_id(2)
+        staff_data = result['schedules'] 
+        self.assertEqual(len(staff_data), 0)
+    
 
     def test_get_schedules_by_ori_req_id_single_schedule(self):
         today = datetime.now().date()
@@ -1281,6 +1287,32 @@ class WFHScheduleServiceTestCase(unittest.TestCase):
         
         # Assert that an empty list is returned
         self.assertEqual(schedules, [])
+
+    def test_invalid_request_id(self):
+        response = WFHScheduleService.get_schedules_by_ori_req_id(-1)  # Invalid ID
+        self.assertEqual(response['schedules'], [])
+
+    def test_schedules_with_non_existent_parent_requests(self):
+        # Add a schedule with a reason_for_withdrawing that doesn't exist
+        today = datetime.now().date()
+        schedule = WFHSchedule(
+            request_id=3,
+            staff_id=self.staff3.staff_id,
+            manager_id=self.staff2.staff_id,
+            date = today,
+            duration="FULL_DAY",
+            status="APPROVED",
+            dept=self.staff3.dept, 
+            position=self.staff3.position, 
+            reason_for_withdrawing=99999  # Invalid ID
+
+        )
+        db.session.add(schedule)
+        db.session.commit()
+
+        response = WFHScheduleService.get_schedules_by_ori_req_id(schedule.request_id)
+        self.assertEqual(len(response['schedules']), 0)  # Should still return the original valid schedules
+    
 
 
 

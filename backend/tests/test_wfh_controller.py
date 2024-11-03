@@ -6,7 +6,7 @@ from config import TestConfig
 from app.models.staff import Staff
 from app.models.wfh_request import WFHRequest
 from app.models.wfh_schedule import WFHSchedule
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from app.services.wfh_request_service import WFHRequestService
 from app.services.wfh_schedule_service import WFHScheduleService
 
@@ -1153,6 +1153,255 @@ class WFHControllerTestCase(unittest.TestCase):
             response = self.client.get(f'/api/staff-requests/{self.staff.staff_id}')
             self.assertEqual(response.status_code, 500)
             self.assertIn("An error occurred", response.get_json()["message"])
+
+    def test_schedules_by_valid_request_id(self):
+        today = datetime.now().date()
+        wfh_schedule = WFHSchedule(
+            request_id=1,
+            staff_id=self.staff.staff_id,
+            manager_id=self.manager.staff_id,
+            date=today,
+            duration="FULL_DAY",
+            status="APPROVED",
+            dept=self.staff.dept,
+            position=self.staff.position
+        )
+        db.session.add(wfh_schedule)
+        db.session.commit()
+
+        response = self.client.get(f'/api/schedules-by-request-id/{wfh_schedule.request_id}')
+        self.assertEqual(response.status_code, 200)
+        response_data = response.get_json()
+        self.assertIn('schedules', response_data)
+        self.assertIsInstance(response_data['schedules'], list) 
+
+        if response_data['schedules']:
+            schedule = response_data['schedules'][0]
+            self.assertIn('schedule_id', schedule)
+            self.assertIn('date', schedule)
+            self.assertIn('duration', schedule)
+            self.assertIn('status', schedule)
+
+    def test_get_schedules_by_request_id_not_found(self):
+        non_existent_request_id = '99999'  # Assuming this ID doesn't exist in the database
+        
+        # Mock the service to return None when querying for this ID
+        with patch('app.services.wfh_schedule_service.WFHScheduleService.get_schedules_by_request_id', return_value=None):
+            response = self.client.get(f'/api/schedules-by-request-id/{non_existent_request_id}')
+            
+            self.assertEqual(response.status_code, 404)
+            data = response.get_json()
+            self.assertIn('message', data)
+            self.assertEqual(data['message'], 'Request not found')
+
+    def test_get_schedules_by_request_id_invalid_format(self):
+        invalid_request_id = 'abc'  # Not a digit, should trigger 400 error
+        response = self.client.get(f'/api/schedules-by-request-id/{invalid_request_id}')
+        
+        self.assertEqual(response.status_code, 400)
+        data = response.get_json()
+        self.assertIn('message', data)
+        self.assertEqual(data['message'], 'Invalid request ID format')
+   
+    def test_get_schedules_by_request_id_server_error(self):
+        invalid_request_id = 1  # Can be any valid ID
+        with patch('app.services.wfh_schedule_service.WFHScheduleService.get_schedules_by_request_id', side_effect=Exception("Database error")):
+            response = self.client.get(f'/api/schedules-by-request-id/{invalid_request_id}')
+            
+            self.assertEqual(response.status_code, 500)
+            data = response.get_json()
+            
+            self.assertIn('message', data)
+            self.assertEqual(data['message'], 'An error occurred: Database error')
+    
+    def test_get_schedules_by_request_id_no_schedules(self):
+        valid_request_id = 2  # Ensure this ID has no associated schedules in the test database
+        response = self.client.get(f'/api/schedules-by-request-id/{valid_request_id}')
+        
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        
+        self.assertIn('schedules', data)
+        self.assertIsInstance(data['schedules'], list)
+        self.assertEqual(len(data['schedules']), 0)  # Check that the list is empty
+
+
+
+    def test_check_withdrawal_success_with_withdrawal(self):
+        request_id = 1
+        mock_wfh_request = Mock(staff_id=1, start_date="2024-11-02")
+
+        with patch('app.models.wfh_request.WFHRequest.query') as mock_query:
+            with patch('app.services.wfh_request_service.WFHRequestService.check_withdrawal') as mock_check:
+                # Setup the mocks
+                mock_query.filter_by.return_value.first.return_value = mock_wfh_request
+                mock_check.return_value = True
+
+                # Make the request
+                response = self.client.get(f'/api/check-withdrawal/{request_id}')
+                data = response.get_json()
+
+                # Assertions
+                self.assertEqual(response.status_code, 200)
+                self.assertTrue(data['withdrawn'])
+                mock_check.assert_called_once_with(1, "2024-11-02")
+    def test_check_withdrawal_success_without_withdrawal(self):
+            request_id = 1
+            mock_wfh_request = Mock(staff_id=1, start_date="2024-11-02")
+
+            with patch('app.models.wfh_request.WFHRequest.query') as mock_query:
+                with patch('app.services.wfh_request_service.WFHRequestService.check_withdrawal') as mock_check:
+                    # Setup the mocks
+                    mock_query.filter_by.return_value.first.return_value = mock_wfh_request
+                    mock_check.return_value = False
+
+                    # Make the request - Note the updated URL path
+                    response = self.client.get(f'/api/check-withdrawal/{request_id}')
+                    data = response.get_json()
+
+                    # Assertions
+                    self.assertEqual(response.status_code, 200)
+                    self.assertFalse(data['withdrawn'])
+                    mock_check.assert_called_once_with(1, "2024-11-02")
+
+    def test_check_withdrawal_custom_schedule_date(self):
+        request_id = 1
+        mock_wfh_request = Mock(staff_id=1, start_date="2024-11-02")
+        custom_date = "2024-11-03"
+
+        with patch('app.models.wfh_request.WFHRequest.query') as mock_query:
+            with patch('app.services.wfh_request_service.WFHRequestService.check_withdrawal') as mock_check:
+                # Setup the mocks
+                mock_query.filter_by.return_value.first.return_value = mock_wfh_request
+                mock_check.return_value = True
+
+                # Make the request - Note the updated URL path
+                response = self.client.get(f'/api/check-withdrawal/{request_id}?schedule_date={custom_date}')
+                data = response.get_json()
+
+                # Assertions
+                self.assertEqual(response.status_code, 200)
+                self.assertTrue(data['withdrawn'])
+                mock_check.assert_called_once_with(1, custom_date)
+
+    def test_check_withdrawal_request_not_found(self):
+        request_id = "INVALID_REQ"
+
+        with patch('app.models.wfh_request.WFHRequest.query') as mock_query:
+            # Setup the mock to return None
+            mock_query.filter_by.return_value.first.return_value = None
+
+            # Make the request - Note the updated URL path
+            response = self.client.get(f'/api/check-withdrawal/{request_id}')
+            data = response.get_json()
+
+            # Assertions
+            self.assertEqual(response.status_code, 404)
+            self.assertEqual(data['message'], 'Request not found')
+
+    def test_check_withdrawal_server_error(self):
+        request_id = 1
+        mock_wfh_request = Mock(staff_id=1, start_date="2024-11-02")
+
+        with patch('app.models.wfh_request.WFHRequest.query') as mock_query:
+            with patch('app.services.wfh_request_service.WFHRequestService.check_withdrawal', 
+                    side_effect=Exception("Database error")) as mock_check:
+                # Setup the mocks
+                mock_query.filter_by.return_value.first.return_value = mock_wfh_request
+
+                # Make the request - Note the updated URL path
+                response = self.client.get(f'/api/check-withdrawal/{request_id}')
+                data = response.get_json()
+
+                # Assertions
+                self.assertEqual(response.status_code, 500)
+                self.assertIn('message', data)
+                self.assertEqual(data['message'], 'An error occurred: Database error')
+
+    def test_check_withdrawal_invalid_date_format(self):
+        request_id = 1
+        mock_wfh_request = Mock(staff_id=1, start_date="2024-11-02")
+        invalid_date = "invalid-date"
+
+        with patch('app.models.wfh_request.WFHRequest.query') as mock_query:
+            with patch('app.services.wfh_request_service.WFHRequestService.check_withdrawal') as mock_check:
+                # Setup the mocks
+                mock_query.filter_by.return_value.first.return_value = mock_wfh_request
+                mock_check.side_effect = ValueError("Invalid date format")
+
+                # Make the request - Note the updated URL path
+                response = self.client.get(f'/api/check-withdrawal/{request_id}?schedule_date={invalid_date}')
+                data = response.get_json()
+
+                # Assertions
+                self.assertEqual(response.status_code, 400)
+                self.assertIn('message', data)
+                self.assertEqual(data['message'], 'Invalid date format')
+
+    @patch('app.services.wfh_schedule_service.WFHScheduleService.get_schedules_by_ori_req_id')
+    def test_get_schedules_by_ori_request_id_with_schedules(self, mock_get_schedules):
+        request_id = 1
+        # Mock response for schedules
+        mock_data = {
+            "schedules": [
+                {
+                    "duration": "8 hours",
+                    "end_date": None,
+                    "manager_id": 2,
+                    "reason_for_applying": "Medical",
+                    "reason_for_rejection": None,
+                    "request_date": "2024-10-10",
+                    "request_id": request_id,
+                    "staff_id": 3,
+                    "start_date": "2024-11-01",
+                    "status": "approved"
+                }
+            ]
+        }
+        mock_get_schedules.return_value = mock_data
+        
+        # Act
+        response = self.client.get(f'/api/schedules-by-ori-request-id/{request_id}')
+        
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(data, mock_data)
+    # Test for valid request ID without schedules
+    @patch('app.services.wfh_schedule_service.WFHScheduleService.get_schedules_by_ori_req_id')
+    def test_get_schedules_by_ori_request_id_no_schedules(self, mock_get_schedules):
+        request_id = 2
+        mock_get_schedules.return_value = {"schedules": []}  # No schedules
+        response = self.client.get(f'/api/schedules-by-ori-request-id/{request_id}')
+        
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(data, {"schedules": []})
+    # Test for invalid request ID (no records found)
+    @patch('app.services.wfh_schedule_service.WFHScheduleService.get_schedules_by_ori_req_id')
+    def test_get_schedules_by_ori_request_id_invalid_id(self, mock_get_schedules):
+        request_id = 9999  # Assuming this ID doesn't exist
+        mock_get_schedules.return_value = {"schedules": []}
+        response = self.client.get(f'/api/schedules-by-ori-request-id/{request_id}')
+        
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(data, {"schedules": []})
+    # Test for server error
+    @patch('app.services.wfh_schedule_service.WFHScheduleService.get_schedules_by_ori_req_id')
+    def test_get_schedules_by_ori_request_id_server_error(self, mock_get_schedules):
+        request_id = 1
+        mock_get_schedules.side_effect = Exception("Database error")
+        response = self.client.get(f'/api/schedules-by-ori-request-id/{request_id}')
+        
+        self.assertEqual(response.status_code, 500)
+        data = response.get_json()
+        self.assertIn('message', data)
+        self.assertTrue("An error occurred: Database error" in data['message'])
+
+
+
+
 
 
 if __name__ == "__main__":

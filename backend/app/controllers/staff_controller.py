@@ -1,6 +1,4 @@
-# app/controllers/staff_controller.py
 from flask import Blueprint, request, jsonify
-from flask import abort
 from app.services.staff_service import StaffService
 
 staff_bp = Blueprint('staff', __name__, url_prefix='/api')

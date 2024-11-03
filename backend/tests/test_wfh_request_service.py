@@ -326,35 +326,6 @@ class WFHRequestServiceTestCase(unittest.TestCase):
         self.assertEqual(len(requests), 1)
         self.assertEqual(requests[0].status, "PENDING")
 
-    # def test_update_request_to_approved(self):
-    #     # Assume a WFH request has already been created for staff3
-    #     today = datetime.now().date()
-    #     start_date = (today + timedelta(days=5)).strftime("%Y-%m-%d")
-
-    #     wfh_request = WFHRequestService.create_request(
-    #         staff_id=self.staff3.staff_id,
-    #         manager_id=self.staff2.staff_id,
-    #         request_date=today,
-    #         start_date=start_date,
-    #         end_date=None,
-    #         reason_for_applying="Personal reasons",
-    #         duration="FULL_DAY",
-    #     )
-    #     two_months_ago = today - timedelta(days=60)
-    #     # Update the WFH request status to "APPROVED"
-    #     response = WFHRequestService.update_request(
-    #         request_id=wfh_request.request_id,
-    #         new_request_status="APPROVED",
-    #         two_months_ago=two_months_ago,
-    #         reason=None
-    #     )
-    #     self.assertTrue(response)
-
-    #     # Verify the updated status
-    #     updated_requests = WFHRequestService.get_staff_requests(staff_id=self.staff3.staff_id)
-    #     self.assertEqual(len(updated_requests), 1)
-    #     self.assertEqual(updated_requests[0].status, "APPROVED")
-
     def test_cancel_request_success(self):
         # Create a pending request
         today = datetime.now().date()
@@ -484,9 +455,6 @@ class WFHRequestServiceTestCase(unittest.TestCase):
         result = WFHRequestService.check_withdrawal(self.staff3.staff_id, start_date)
 
         self.assertEqual(result, False)
-
-
-
 
 if __name__ == "__main__":
     unittest.main()
