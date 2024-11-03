@@ -524,77 +524,108 @@
   
   // Handle when dates are set in the calendar view
   async function handleDatesSet(info) {
-    if (info.view.type === 'timeGridDay') {
-      const dateStr = getDateStr(info.start);
-      selectedDate.value = dateStr;
-      activeTab.value = 'AM'; // Reset to AM tab on dates set
-      if (user.value.role === 1) {
+  if (info.view.type === 'timeGridDay') {
+    const dateStr = getDateStr(info.start);
+    selectedDate.value = dateStr;
+    activeTab.value = 'AM';
+
+    if (user.value.role === 1) {
+      try {
         const detailData = await fetchHRScheduleDetail(dateStr);
-        if (detailData) {
+        if (detailData && detailData.staff) {  // Add check for detailData.staff
           let groupedData = {
             AM: {
               inOffice: 0,
               wfh: 0,
               total: detailData.staff.length,
-              teams: {}
+              teams: {},
+              managers: {}  // Add managers object to match the structure
             },
             PM: {
               inOffice: 0,
               wfh: 0,
               total: detailData.staff.length,
-              teams: {}
+              teams: {},
+              managers: {}  // Add managers object to match the structure
             }
           };
-  
-          detailData.staff.forEach(staff => {
-            const position = staff.position || 'Unknown';
-  
-            // AM
-            if (!groupedData.AM.teams[position]) {
-              groupedData.AM.teams[position] = { teamName: position, inOffice: 0, wfh: 0, total: 0, staff: [] };
-            }
-            groupedData.AM.teams[position].total += 1;
-            if (staff.status_am === 'OFFICE') {
-              groupedData.AM.teams[position].inOffice += 1;
-              groupedData.AM.inOffice += 1;
-            } else {
-              groupedData.AM.teams[position].wfh += 1;
-              groupedData.AM.wfh += 1;
-            }
-            groupedData.AM.teams[position].staff.push({ staff_id: staff.staff_id, name: staff.name, status: staff.status_am });
-  
-            // PM
-            if (!groupedData.PM.teams[position]) {
-              groupedData.PM.teams[position] = { teamName: position, inOffice: 0, wfh: 0, total: 0, staff: [] };
-            }
-            groupedData.PM.teams[position].total += 1;
-            if (staff.status_pm === 'OFFICE') {
-              groupedData.PM.teams[position].inOffice += 1;
-              groupedData.PM.inOffice += 1;
-            } else {
-              groupedData.PM.teams[position].wfh += 1;
-              groupedData.PM.wfh += 1;
-            }
-            groupedData.PM.teams[position].staff.push({ staff_id: staff.staff_id, name: staff.name, status: staff.status_pm });
-          });
-  
-          groupedData.AM.total = detailData.staff.length;
-          groupedData.PM.total = detailData.staff.length;
-  
+
+          // Check if staff array exists and is not empty
+          if (Array.isArray(detailData.staff) && detailData.staff.length > 0) {
+            detailData.staff.forEach(staff => {
+              if (!staff) return;  // Skip if staff object is undefined
+              
+              const position = staff.position || 'Unknown';
+
+              // AM Processing
+              if (!groupedData.AM.teams[position]) {
+                groupedData.AM.teams[position] = { 
+                  teamName: position, 
+                  inOffice: 0, 
+                  wfh: 0, 
+                  total: 0, 
+                  staff: [] 
+                };
+              }
+              
+              groupedData.AM.teams[position].total += 1;
+              if (staff.status_am === 'OFFICE') {
+                groupedData.AM.teams[position].inOffice += 1;
+                groupedData.AM.inOffice += 1;
+              } else {
+                groupedData.AM.teams[position].wfh += 1;
+                groupedData.AM.wfh += 1;
+              }
+              groupedData.AM.teams[position].staff.push({
+                staff_id: staff.staff_id,
+                name: staff.name,
+                status: staff.status_am
+              });
+
+              // PM Processing
+              if (!groupedData.PM.teams[position]) {
+                groupedData.PM.teams[position] = { 
+                  teamName: position, 
+                  inOffice: 0, 
+                  wfh: 0, 
+                  total: 0, 
+                  staff: [] 
+                };
+              }
+              
+              groupedData.PM.teams[position].total += 1;
+              if (staff.status_pm === 'OFFICE') {
+                groupedData.PM.teams[position].inOffice += 1;
+                groupedData.PM.inOffice += 1;
+              } else {
+                groupedData.PM.teams[position].wfh += 1;
+                groupedData.PM.wfh += 1;
+              }
+              groupedData.PM.teams[position].staff.push({
+                staff_id: staff.staff_id,
+                name: staff.name,
+                status: staff.status_pm
+              });
+            });
+          }
+
           selectedDateDetails.value = groupedData;
-          expandedTeams.value = {}; // Reset expanded teams
-  
-          // Only show the card on large screens when navigating dates
+          expandedTeams.value = {};
+
           if (!isSmallScreen.value) {
             isRightContainerVisible.value = true;
           }
-          // On small screens, do not automatically show the card when navigating
         } else {
-          alert('Error fetching details for the selected date.');
+          console.warn('No detail data available for the selected date');
+          selectedDateDetails.value = null;
         }
+      } catch (error) {
+        console.error('Error processing date details:', error);
+        selectedDateDetails.value = null;
       }
     }
   }
+}
   async function filterByDepartment() {
   if (!selectedDepartment.value) return;
 
