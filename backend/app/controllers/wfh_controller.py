@@ -490,7 +490,6 @@ def get_schedules_by_ori_request_id(request_id):
         # Fetch schedule data from the service
         data = WFHScheduleService.get_schedules_by_ori_req_id(request_id)
 
-
         print("Schedules fetched successfully")
         return jsonify(data), 200
     except Exception as e:
