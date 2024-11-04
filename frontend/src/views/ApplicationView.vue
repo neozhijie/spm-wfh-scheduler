@@ -256,7 +256,6 @@ export default {
         const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/request`, requestData);
 
         // Success message
-        console.log('Request successful:', response.data);
         alert('WFH request submitted successfully.');
         // Reset the form after submission
         this.resetForm();

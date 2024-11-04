@@ -256,7 +256,6 @@ const fetchRequests = async () => {
                 const scheduleResponse = await axios.get(
                     `${import.meta.env.VITE_API_URL}/api/schedules-by-ori-request-id/${request.request_id}`
                 );
-                console.log(scheduleResponse.data.schedules)
                 if(scheduleResponse.data && scheduleResponse.data.schedules){
                     scheduleResponse.data.schedules.forEach(schedule => {
                         if (schedule.status == 'WITHDRAWN'){
@@ -272,7 +271,6 @@ const fetchRequests = async () => {
 
         // Assign the combined requests and schedules to allRequests
         allRequests.value = allRequestsArray;
-        console.log(allRequests.value)
 
     } catch (error) {
         console.error('Error fetching requests:', error);
@@ -296,7 +294,6 @@ const confirmCancel = async () => {
             request_status: 'CANCELLED',
             reason: ''
         });
-        console.log('Cancellation response:', response.data);
         showCancelConfirmation.value = false;
         await fetchRequests();
     } catch (error) {
@@ -312,7 +309,6 @@ const closeCancelConfirmation = () => {
 };
 
 const isWithinWithdrawalPeriod = (applicationDate) => {
-    // console.log('request', applicationDate)
     const appDate = new Date(applicationDate);
     const today = new Date();
 
@@ -332,7 +328,6 @@ const fetchScheduleIds = async (request_id) => {
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/schedules-by-request-id/${request_id}`);
 
         if (response.data) {
-            console.log('Fetched schedule IDs:', response.data.schedules);
             return response.data.schedules;
         } else {
             console.warn('No schedule IDs found for this request.');
@@ -397,10 +392,6 @@ const withdrawRequest = async (request_id) => {
         return;
     }
 
-    console.log('Selected Request Data:', selectedRequest.value); // Log entire selected request
-    console.log('Schedule ID being sent:', selectedRequest.value.schedule_id); // Log specific schedule_id
-    console.log('Rejection Reason:', rej_reason.value); // Log rejection reason
-
     errorMessage.value = '';
     try {
         const schedule_id = selectedRequest.value.schedule_id;
@@ -411,24 +402,18 @@ const withdrawRequest = async (request_id) => {
             reason: rej_reason.value
         };
         
-        console.log('Data being sent to API:', requestData); // Log complete payload
-
         const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/create-withdraw-request`, requestData);
         
-        console.log('API Response:', response.data); // Log API response
         closeForm();
         await fetchRequests();
         await checkAllWithdrawalStatuses();
     } catch (error) {
         console.error('Error withdrawing request:', error);
-        console.log('Error details:', error.response?.data); // Log error details if available
         alert('Error withdrawing request');
     }
 };
 
 const openRejectForm = async (request, schedule = null) => {
-    console.log('Original Request:', request); // Log incoming request
-    console.log('Schedule (if recurring):', schedule); // Log schedule if it exists
     
     try {
         if (schedule) {
@@ -438,24 +423,20 @@ const openRejectForm = async (request, schedule = null) => {
                 end_date: null,
                 schedule_id: schedule.schedule_id
             };
-            console.log('Modified Request (recurring):', modifiedRequest); // Log modified recurring request
             selectedRequest.value = modifiedRequest;
         } else {
             const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/schedules-by-request-id/${request.request_id}`);
-            console.log('API Response for schedule:', response.data.schedules); // Log API response
             
             const modifiedRequest = {
                 ...request,
                 schedule_id: response.data.schedules.map(schedule => schedule.schedule_id)[0]
             };
-            console.log('Modified Request (non-recurring):', modifiedRequest); // Log modified non-recurring request
             selectedRequest.value = modifiedRequest;
         }
         
         showForm.value = true;
     } catch (error) {
         console.error('Error getting schedule data:', error);
-        console.log('Error details:', error.response?.data); // Log error details if available
         alert('Error opening withdrawal form');
     }
 };

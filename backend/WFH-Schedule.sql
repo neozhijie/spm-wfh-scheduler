@@ -21,8 +21,8 @@ CREATE TABLE WFHRequest (
     request_date DATE NOT NULL,
     start_date DATE NOT NULL,
     end_date DATE DEFAULT NULL,
-    duration VARCHAR(20) NOT NULL, -- 'FULL_DAY', 'HALF_DAY_AM', 'HALF_DAY_PM'
-    status VARCHAR(20) DEFAULT 'PENDING', -- 'PENDING', 'REJECTED'
+    duration VARCHAR(20) NOT NULL,
+    status VARCHAR(20) DEFAULT 'PENDING',
     reason_for_applying TEXT,
     reason_for_rejection TEXT DEFAULT NULL,
     FOREIGN KEY (staff_id) REFERENCES Staff(staff_id),
@@ -35,8 +35,8 @@ CREATE TABLE WFHSchedule (
     staff_id INT NOT NULL,
     manager_id INT NOT NULL,
     date DATE NOT NULL,
-    duration VARCHAR(20) NOT NULL, -- 'FULL_DAY', 'HALF_DAY_AM', 'HALF_DAY_PM'
-    status VARCHAR(20) DEFAULT 'PENDING', -- 'PENDING', 'WITHDRAWN', 'REJECTED'
+    duration VARCHAR(20) NOT NULL,
+    status VARCHAR(20) DEFAULT 'PENDING',
     dept VARCHAR(255) NOT NULL,
     position VARCHAR(255) NOT NULL,    
     reason_for_withdrawing TEXT DEFAULT NULL,
@@ -88,8 +88,8 @@ VALUES
 (28, 'Zhi Ying', 'Yeo', 'Engineering', 'Operation Planning', 'Singapore', 'op2@test.com', 5, 2, 'password'),
 
 -- HR with 2 HR Team, 2 LD Team, 2 Admin Team
-(29, 'Hui Min', 'Chua', 'HR', 'HR Team', 'Singapore', 'hr1@test.com', 6, 1, 'password'),
-(30, 'Rohan', 'Kapoor', 'HR', 'HR Team', 'Singapore', 'hr2@test.com', 6, 1, 'password'),
+(29, 'Hui Min', 'Chua', 'HR', 'HR Team', 'Singapore', 'hr1@test.com', 6, 2, 'password'),
+(30, 'Rohan', 'Kapoor', 'HR', 'HR Team', 'Singapore', 'hr2@test.com', 6, 2, 'password'),
 (31, 'Nur Aisyah', 'Binte Ibrahim', 'HR', 'LD Team', 'Singapore', 'ld1@test.com', 6, 2, 'password'),
 (32, 'Wei Ling', 'Sim', 'HR', 'LD Team', 'Singapore', 'ld2@test.com', 6, 2, 'password'),
 (33, 'Deepa', 'Krishnan', 'HR', 'Admin Team', 'Singapore', 'hradmin1@test.com', 6, 2, 'password'),

@@ -511,7 +511,6 @@ async function displayDateDetails(dateStr) {
         }
         groupedData.AM.teams[position].staff.push({ staff_id: staff.staff_id, name: staff.name, status: staff.status_am });
       }
-      console.log(groupedData.AM.teams[position])
 
       if (staff.staff_id != user.value.staff_id){
       // PM

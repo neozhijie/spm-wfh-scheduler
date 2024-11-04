@@ -64,7 +64,6 @@ async function fetchEvents(startDate, endDate) {
       }
     });
     const fetchedDates = response.data.dates;
-    console.log(response.data);
 
     // Clear existing events before pushing new ones
     const newEvents = [];
@@ -198,7 +197,6 @@ async function handleDateClick(info) {
   } else if (clickedDate > computeMaxDate.value) {
     alert('You cannot select a date beyond three months ahead.');
   } else {
-    console.log('Date clicked:', info.dateStr);
     selectedDate.value = info.dateStr;
   }
 }

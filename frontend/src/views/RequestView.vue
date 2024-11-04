@@ -185,8 +185,6 @@ const selectedRequest = ref(null);
 const errorMessage = ref('');
 
 const openRejectForm = (request) => {
-  // Log the request to inspect the data passed
-  console.log('Request data:', request);
 
   // Check if the request object and date fields are defined
   if (!request || !request.request_date || !request.start_date) {
@@ -219,7 +217,6 @@ const confirmApprove = async () => {
             request_status: 'APPROVED',
             reason: ''
         });
-        console.log('Approval response:', response.data);
         showApproveConfirmation.value = false;
         await fetchPendingRequests();
     } catch (error) {
@@ -253,12 +250,10 @@ const rejectRequest = async () => {
       request_status: 'REJECTED',
       reason: rej_reason.value
     });
-    console.log('Rejection response:', response.data);
     closeForm();
     // Refresh the pending requests list
     await fetchPendingRequests();
   } catch (error) {
-    console.error('Error rejecting request:', error);
     alert('Error rejecting request');
   }
 };

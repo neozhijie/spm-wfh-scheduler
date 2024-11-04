@@ -253,7 +253,7 @@
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       user.value = JSON.parse(storedUser);
-      if (user.value.role === 1) {
+      if (user.value.dept === 'CEO' || user.value.position ==='HR Team') {
         initiateChunkedSummaryLoading();
         fetchDepartments();
 
@@ -490,7 +490,6 @@
   
   // Handle date click on the calendar
   async function handleDateClick(info) {
-    console.log('hi')
     if (info.view.type === 'dayGridMonth') {
         const clickedDate = new Date(info.dateStr);
 
@@ -501,7 +500,7 @@
         } else {
         selectedDate.value = info.dateStr;
         activeTab.value = 'AM'; // Reset to AM tab on new selection
-        if (user.value.role === 1) {
+        if (user.value.role === 1 || user.value.position == 'HR Team') {
             await displayDateDetails(info.dateStr);
         }
         }
@@ -511,7 +510,7 @@
   
   // Handle event click on the calendar
   async function handleEventClick(info) {
-    if (user.value.role === 1) {
+    if (user.value.role === 1 || user.value.position == 'HR Team') {
       const dateStr = getDateStr(info.event.start);
       const viewType = info.view.type;
       if (viewType === 'timeGridWeek' || viewType === 'timeGridDay') {
@@ -529,7 +528,7 @@
     selectedDate.value = dateStr;
     activeTab.value = 'AM';
 
-    if (user.value.role === 1) {
+    if ((user.value.role === 1 || user.value.position == 'HR Team')) {
       try {
         const detailData = await fetchHRScheduleDetail(dateStr);
         if (detailData && detailData.staff) {  // Add check for detailData.staff
@@ -707,7 +706,6 @@
               });
             }}else{
             if (staff.staff_id in groupedData[period].managers) {
-              console.log(groupedData[period].managers)
               if (staff[`status_${period.toLowerCase()}`] === 'OFFICE') {
                 groupedData[period].managers[staff.staff_id].inOffice += 1;
                 groupedData[period].inOffice += 1;
@@ -774,7 +772,6 @@
     try {
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/departments`);
         departments.value = response.data.departments; // Assuming the response data is an array of departments
-        console.log(departments.value); // Check the console for the departments
     } catch (error) {
         console.error('Error fetching departments:', error);
     }
